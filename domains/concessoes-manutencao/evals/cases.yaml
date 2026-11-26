@@ -1,0 +1,166 @@
+domain: concessoes-manutencao
+# Casos base do canal de manutencao. Cada defeito precisa (1) recuperar o
+# artigo com o item do anexo de niveis de servico e (2) levantar o motivo de
+# handoff que define a prioridade do chamado (e, portanto, o prazo do console):
+#   risco_seguranca -> urgent (4h) | tela_inoperante, notificacao_fiscalizacao -> high (24h)
+#   informacao_incorreta -> normal (48h) | conservacao_limpeza -> low (5d)
+# Prazos ficticios de demonstracao: ver knowledge/articles/anexo-niveis-de-servico.md.
+cases:
+  - id: risco-fio-exposto-abrigo
+    category: risco_seguranca
+    question: Tem um fio exposto soltando faisca no abrigo de onibus ABR-1104 na Paulista.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - risco-seguranca.md
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
+  - id: risco-vidro-quebrado
+    category: risco_seguranca
+    question: O vidro do abrigo esta quebrado e com pedacos no chao, alguem pode se cortar.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - risco-seguranca.md
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
+  - id: tela-apagada-relogio-pinheiros
+    category: tela_inoperante
+    question: O relogio REL-0423 na Teodoro Sampaio esta com a tela apagada desde ontem.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - tela-apagada.md
+      required_handoff_reasons:
+        - tela_inoperante
+      allowed_handoff_reasons:
+        - tela_inoperante
+        - low_confidence
+        - provider_error
+
+  - id: painel-metro-travado
+    category: tela_inoperante
+    question: O painel digital do mezanino da estacao esta travado e piscando.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - tela-apagada.md
+      required_handoff_reasons:
+        - tela_inoperante
+      allowed_handoff_reasons:
+        - tela_inoperante
+        - low_confidence
+        - provider_error
+
+  - id: relogio-hora-errada
+    category: informacao_incorreta
+    question: O relogio da Avenida Paulista esta mostrando a hora errada, uma hora atrasado.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - hora-temperatura-errada.md
+      required_handoff_reasons:
+        - informacao_incorreta
+      allowed_handoff_reasons:
+        - informacao_incorreta
+        - low_confidence
+        - provider_error
+
+  - id: pichacao-relogio
+    category: conservacao_limpeza
+    question: Picharam o relogio da Praca da Se, ficou todo pichado.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - pichacao-limpeza.md
+      required_handoff_reasons:
+        - conservacao_limpeza
+      allowed_handoff_reasons:
+        - conservacao_limpeza
+        - low_confidence
+        - provider_error
+
+  - id: vandalismo-com-risco-prioriza-risco
+    category: risco_seguranca
+    question: Picharam o abrigo e quebraram o vidro, tem vidro quebrado no banco.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - pichacao-limpeza.md
+      required_handoff_reasons:
+        - risco_seguranca
+        - conservacao_limpeza
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - conservacao_limpeza
+        - low_confidence
+        - provider_error
+
+  - id: notificacao-fiscalizacao
+    category: notificacao_fiscalizacao
+    question: Recebemos uma notificacao da fiscalizacao sobre o relogio REL-0215, qual o valor da multa?
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - fiscalizacao-notificacao.md
+      required_handoff_reasons:
+        - notificacao_fiscalizacao
+      allowed_handoff_reasons:
+        - notificacao_fiscalizacao
+        - legal_risk
+        - sensitive_topic
+        - low_confidence
+        - provider_error
+
+  - id: como-registrar-sem-codigo
+    category: registro
+    question: Nao achei o codigo do equipamento, como faco para registrar um defeito no abrigo?
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - como-registrar-defeito.md
+      allowed_handoff_reasons:
+        - low_confidence
+        - provider_error
+
+  - id: pedido-humano
+    category: handoff_explicito
+    question: Quero falar com um atendente sobre um abrigo que nunca foi consertado.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      required_handoff_reasons:
+        - explicit_human_request
+      allowed_handoff_reasons:
+        - explicit_human_request
+        - low_confidence
+        - provider_error

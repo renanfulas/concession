@@ -1,0 +1,164 @@
+domain: lgpd-titular
+# Casos base do canal do titular. Cada pedido precisa (1) recuperar o artigo
+# certo e (2) levantar o motivo que define a prioridade do caso do encarregado:
+#   incidente_dados -> urgent (4h, meta interna demo)
+#   dados_de_terceiros, reclamacao_autoridade -> high (24h, meta interna demo)
+#   pedido_titular -> normal (15 dias, LGPD art. 19, II)
+cases:
+  - id: quais-dados-voces-tem
+    category: pedido_titular
+    question: Quero saber quais sao os meus dados que voces tem guardados.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - direitos-do-titular.md
+      required_handoff_reasons:
+        - pedido_titular
+      allowed_handoff_reasons:
+        - pedido_titular
+        - low_confidence
+        - provider_error
+
+  - id: excluir-meus-dados
+    category: pedido_titular
+    question: Quero excluir meus dados do atendimento de voces.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - excluir-ou-corrigir-dados.md
+      required_handoff_reasons:
+        - pedido_titular
+      allowed_handoff_reasons:
+        - pedido_titular
+        - low_confidence
+        - provider_error
+
+  - id: corrigir-telefone
+    category: pedido_titular
+    question: Meu telefone mudou, quero corrigir meus dados cadastrados.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - excluir-ou-corrigir-dados.md
+      required_handoff_reasons:
+        - pedido_titular
+      allowed_handoff_reasons:
+        - pedido_titular
+        - low_confidence
+        - provider_error
+
+  - id: prazo-de-resposta
+    category: informacao
+    question: Em quanto tempo voces respondem um pedido sobre meus dados pela LGPD?
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - prazos-de-resposta.md
+      allowed_handoff_reasons:
+        - pedido_titular
+        - low_confidence
+        - provider_error
+
+  - id: paineis-filmam
+    category: informacao
+    question: Os paineis digitais do metro estao me filmando? Tem camera neles?
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - cameras-e-medicao-de-audiencia.md
+      allowed_handoff_reasons:
+        - low_confidence
+        - provider_error
+
+  - id: imagem-de-terceiro
+    category: dados_de_terceiros
+    question: Preciso das imagens da camera do painel para ver quem passou com meu filho ontem.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - cameras-e-medicao-de-audiencia.md
+      required_handoff_reasons:
+        - dados_de_terceiros
+      allowed_handoff_reasons:
+        - dados_de_terceiros
+        - sensitive_topic
+        - low_confidence
+        - provider_error
+
+  - id: suspeita-vazamento
+    category: incidente_dados
+    question: Acho que meus dados vazaram, recebi mensagem de golpe citando o chamado que abri com voces.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - incidente-vazamento.md
+      required_handoff_reasons:
+        - incidente_dados
+      allowed_handoff_reasons:
+        - incidente_dados
+        - pedido_titular
+        - sensitive_topic
+        - low_confidence
+        - provider_error
+
+  - id: reclamacao-anpd
+    category: reclamacao_autoridade
+    question: Vou fazer uma reclamacao na ANPD se voces nao responderem sobre meus dados.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - direitos-do-titular.md
+      required_handoff_reasons:
+        - reclamacao_autoridade
+      allowed_handoff_reasons:
+        - reclamacao_autoridade
+        - pedido_titular
+        - legal_risk
+        - low_confidence
+        - provider_error
+
+  - id: revogar-consentimento-cookies
+    category: pedido_titular
+    question: Quero revogar o consentimento dos cookies de medicao do site.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - excluir-ou-corrigir-dados.md
+      required_handoff_reasons:
+        - pedido_titular
+      allowed_handoff_reasons:
+        - pedido_titular
+        - low_confidence
+        - provider_error
+
+  - id: falar-com-dpo
+    category: handoff_explicito
+    question: Quero falar com o encarregado sobre privacidade.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      required_handoff_reasons:
+        - explicit_human_request
+      allowed_handoff_reasons:
+        - explicit_human_request
+        - low_confidence
+        - provider_error
