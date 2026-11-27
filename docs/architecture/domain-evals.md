@@ -136,11 +136,16 @@ Quando provider real e pgvector estiverem calibrados em ambiente privado, estes 
 
 ## Modo LLM real (opt-in, nao e gate)
 
-O modo padrao (`--provider-mode deterministic`) continua sendo o gate de CI e
-a saida dele nao mudou. Sem chave, todo caso nao bloqueado termina em
+O modo padrao (`--provider-mode deterministic`) continua sendo o gate de CI.
+Ele nunca chama provedor, mesmo com chave no `.env`: o `ChatFlowService` do
+gate usa `OfflineLLMService` (`app/evals/runner.py`), que segue o mesmo
+caminho de credencial ausente. Todo caso nao bloqueado termina em
 `provider_error` e a resposta e o `provider_error_message` do dominio; o termo
 `atendimento humano` exigido nos casos esta nesse texto. Por isso o modo
 deterministico nao mede o texto do modelo, e uma chave invalida passaria nele.
+Antes disso, uma chave no `.env` fazia o gate chamar o provedor em silencio:
+manutencao caia para 1/13 e LGPD para 2/13, gastando credito
+(`tests/test_domain_evals.py::test_deterministic_cli_never_builds_a_provider_even_with_a_key`).
 
 O modo real mede o texto do modelo e nao pode ser enganado pelo fallback.
 Comando (rode voce mesmo, com `OPENAI_API_KEY` no ambiente ou no `.env`):

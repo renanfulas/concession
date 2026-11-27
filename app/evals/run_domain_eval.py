@@ -6,7 +6,7 @@ import sys
 from app.core.config import get_settings
 from app.domain_engine.loader import DomainLoader
 from app.evals.loader import EvalSuiteLoader
-from app.evals.runner import DomainEvalRunner
+from app.evals.runner import DomainEvalRunner, deterministic_chat_flow
 
 # Exit codes: 0 all passed, 1 setup error (domain/suite), 2 case failures,
 # 3 real mode cannot start (no external provider or key not configured).
@@ -33,7 +33,8 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=("deterministic", "real"),
         default="deterministic",
         help=(
-            "deterministic (default, CI gate) keeps the current behavior. "
+            "deterministic (default, CI gate) never calls a provider, even "
+            "with a key configured: answers are the domain fallback. "
             "real is opt-in: needs a provider key, fails on provider_error and "
             "applies llm_expectation checks."
         ),
@@ -97,7 +98,7 @@ def _run_deterministic(args: argparse.Namespace) -> int:
         print(json.dumps(error))
         return 1
 
-    result = DomainEvalRunner().run(domain=domain, suite=suite)
+    result = DomainEvalRunner(chat_flow=deterministic_chat_flow()).run(domain=domain, suite=suite)
     payload = result.model_dump_json(indent=2)
     print(payload)
     _write_report(args.report, payload)

@@ -164,6 +164,51 @@ def test_runner_flags_forbidden_term_in_answer() -> None:
     assert "forbidden_term_present:abracadabra" in result.failures
 
 
+def test_deterministic_cli_never_builds_a_provider_even_with_a_key(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A key in ``.env`` used to turn the CI gate into a paid, non-deterministic run."""
+    from app.evals import run_domain_eval
+
+    monkeypatch.setattr(
+        "app.retrieval.service.get_settings",
+        lambda: type("Settings", (), {"retrieval_backend": "lexical"})(),
+    )
+
+    built: list[str] = []
+
+    class RecordingWrapper:
+        # LLMService turns any constructor error into ProviderError, so record
+        # the call instead of raising.
+        def __init__(self, provider: str, model: str, api_key: str | None = None) -> None:
+            _ = api_key
+            built.append(f"{provider}:{model}")
+
+        def generate_answer(self, prompt: str) -> str:
+            _ = prompt
+            return "texto do modelo, que o gate deterministico nunca deve ver"
+
+    monkeypatch.setattr("app.llm.service.LLMWrapper", RecordingWrapper)
+
+    exit_code = run_domain_eval.main(["concessoes-manutencao"])
+    output = capsys.readouterr().out
+
+    assert built == []
+    assert exit_code == 0, output
+    assert '"failed": 0' in output
+
+
+def test_offline_llm_service_takes_the_missing_credentials_path() -> None:
+    from app.evals.runner import OfflineLLMService
+    from app.llm.wrapper import MISSING_CREDENTIALS
+
+    domain = DomainLoader(Path("domains")).load("concessoes-manutencao")
+    assert domain is not None
+    with pytest.raises(ProviderError) as raised:
+        OfflineLLMService().get_provider(domain, api_key="sk-test-not-a-real-key")
+    assert raised.value.failure_kind == MISSING_CREDENTIALS
+
+
 def test_summary_recall_reaches_prompt_through_real_flow(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

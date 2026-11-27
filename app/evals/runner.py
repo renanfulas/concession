@@ -1,3 +1,4 @@
+from app.core.errors import ProviderError
 from app.core.text import fold
 from app.domain_engine.models import DomainConfig
 from app.evals.models import (
@@ -7,7 +8,34 @@ from app.evals.models import (
     EvalRunResult,
     EvalSuite,
 )
+from app.llm.base import BaseLLMProvider
+from app.llm.wrapper import MISSING_CREDENTIALS
 from app.orchestration.chat_flow import ChatFlowService
+
+
+class OfflineLLMService:
+    """LLM service for the deterministic gate: every call takes the no-key path.
+
+    The gate must give the same result on every machine. With the default
+    ``LLMService``, a key in ``.env`` made ``run_domain_eval`` call the real
+    provider and score the model's text against ``required_terms`` calibrated
+    for the fallback (and spend provider credit). This raises the same
+    ``ProviderError`` the wrapper raises when no credential is configured.
+    """
+
+    def get_provider(self, domain: DomainConfig, api_key: str | None = None) -> BaseLLMProvider:
+        _ = (domain, api_key)
+        raise ProviderError(
+            "provider disabled in the deterministic eval",
+            failure_kind=MISSING_CREDENTIALS,
+        )
+
+
+def deterministic_chat_flow() -> ChatFlowService:
+    """Chat flow for the deterministic gate, independent of configured keys."""
+    chat_flow = ChatFlowService()
+    chat_flow.llm_service = OfflineLLMService()
+    return chat_flow
 
 
 def evaluate_expectation(
