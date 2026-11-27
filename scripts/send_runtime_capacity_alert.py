@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 import sys
 import time
-from typing import Any
 from urllib import error, request
 
 from scripts.check_runtime_capacity import Check, collect_checks, overall_status

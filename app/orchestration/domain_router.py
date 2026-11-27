@@ -23,7 +23,7 @@ that needs conversation persistence and is intentionally out of scope here.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import re
 
 from app.core.text import fold

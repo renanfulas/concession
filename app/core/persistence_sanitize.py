@@ -93,12 +93,12 @@ _SECRET_ASSIGNMENT = re.compile(
     rf"(?i)\b(?P<label>{_SECRET_LABEL})\s*[:=]\s*(?P<value>{_SECRET_VALUE})"
 )
 _NATURAL_LANGUAGE_SECRET = re.compile(
-    rf"(?i)\b(?P<label>(?:(?:my|the|minha|meu|a|o)\s+)?"
-    rf"(?:password|senha|passphrase|secret|segredo|api[\s_-]?key|"
-    rf"client[\s_-]?secret|access[\s_-]?token|refresh[\s_-]?token)"
-    rf"(?:\s+(?:do|da|de|para|for)\s+[a-z0-9_.-]{{1,64}})?)"
-    rf"\s+(?P<link>is|was|foi|seria|e|\u00e9)\s+"
-    rf"(?P<value>[^\r\n,;.!?]+)"
+    r"(?i)\b(?P<label>(?:(?:my|the|minha|meu|a|o)\s+)?"
+    r"(?:password|senha|passphrase|secret|segredo|api[\s_-]?key|"
+    r"client[\s_-]?secret|access[\s_-]?token|refresh[\s_-]?token)"
+    r"(?:\s+(?:do|da|de|para|for)\s+[a-z0-9_.-]{1,64})?)"
+    r"\s+(?P<link>is|was|foi|seria|e|\u00e9)\s+"
+    r"(?P<value>[^\r\n,;.!?]+)"
 )
 _SENSITIVE_HEADER = re.compile(
     r"(?im)^(?P<name>[ \t]*(?:authorization|proxy-authorization|cookie|"

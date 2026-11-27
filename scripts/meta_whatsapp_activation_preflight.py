@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 import json
 import os
-import sys
 from typing import Mapping
 
 
