@@ -80,6 +80,25 @@ base "demo") e vermelho no dominio de referencia (prazo global de 60 min).
 python -m pytest tests/test_web_support_console.py -k domain_sla -v
 ```
 
+## 6. O mesmo motor de prazo governa as iniciativas de IA (1 min)
+
+Com o banco descartavel e os dois seeds (`scripts.seed_demo_cases` e
+`scripts.seed_demo_ai_solutions`), entre na `/team` com o login de
+desenvolvimento e abra **Intake de IA**. Mostre:
+
+- "Contagem de audiencia por camera" saiu **alta** sem LLM: imagem de pessoas e
+  hospedagem fora do Brasil, com o artigo da LGPD em cada motivo;
+- tente aprovar sem RIPD: a API recusa e diz qual campo falta;
+- "Triagem automatica de curriculos" foi **rejeitada** com motivo de lista
+  fechada; a ficha `.md` traz a trilha de quem fez o que;
+- "Baixar inventario (CSV)" e o inventario com responsavel, dados tratados e
+  criticidade.
+
+```bash
+APP_ENV=development python -m scripts.seed_demo_ai_solutions
+python -m pytest tests/test_ai_intake.py -v
+```
+
 ## Perguntas que costumam vir
 
 - **E se a regra nao pegar um sinonimo?** O pedido cai em `low_confidence` e

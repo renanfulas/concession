@@ -47,6 +47,7 @@ Primeiro destino: `docs/project-map.md` (estado de cada frente) e
 | --- | --- |
 | Domínios da demo | `domains/concessoes-manutencao/`, `domains/lgpd-titular/`, `docs/architecture/domain-contract.md` |
 | SLA por domínio e prioridade do caso | `docs/architecture/domain-contract.md` (blocos `sla` e `escalation_rules[].priority`); código em `app/support/sla.py`, `app/handoff/taxonomy.py` |
+| Intake e inventario de solucoes de IA | `docs/architecture/ai-intake.md`; politica em `governance/ai-intake.yaml`; codigo em `app/ai_intake/`, `app/api/routes/ai_intake.py`, `app/static/team/intake.*` |
 | Console do time / tickets | `docs/architecture/integration-contracts.md`, `docs/runbooks/support-console-smoke.md`; código em `app/support/`, `app/api/routes/web_support.py` |
 | LGPD / privacidade | `docs/ficha-do-sistema.md`, `SECURITY.md`, `docs/architecture/observability.md`; código em `app/core/persistence_sanitize.py`, `app/core/privacy.py` |
 | pgvector / retrieval | `docs/architecture/architecture.md`, `docs/runbooks/pgvector-promotion-checklist.md`, `docs/runbooks/pgvector-retrieval-contract.md` |

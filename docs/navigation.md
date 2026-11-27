@@ -22,6 +22,7 @@
 | Criar ou mudar um dominio | `docs/architecture/domain-contract.md`, `docs/architecture/knowledge-authoring.md`, `docs/architecture/domain-evals.md` |
 | Mudar prazo ou prioridade | `docs/architecture/domain-contract.md` (blocos `sla` e `escalation_rules[].priority`) |
 | Mudar API ou console | `docs/architecture/integration-contracts.md`, `docs/architecture/observability.md` |
+| Intake e inventario de solucoes de IA | `docs/architecture/ai-intake.md`, `governance/ai-intake.yaml`, `docs/ficha-do-sistema.md` |
 | Retrieval ou pgvector | `docs/architecture/architecture.md`, `docs/runbooks/pgvector-promotion-checklist.md` |
 | LGPD, dados, logs | `docs/ficha-do-sistema.md`, `SECURITY.md`, `docs/architecture/observability.md` |
 | Seguranca do LLM | `docs/security/llm-confinement.md` |
