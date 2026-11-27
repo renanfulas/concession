@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 
-import pytest
 
 from app.integrations.webhook_ingress import (
     CLAIMED,

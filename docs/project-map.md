@@ -46,13 +46,14 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | GIF de demonstracao no README | ✅ | `docs/assets/demo-concession.gif` (55 s, 1,0 MB, regravado com as telas novas): chat do cidadao (alerta de seguranca e cartao do chamado; exclusao de dados com prazo de 15 dias) e fila `/team` com semaforo, prazo e base, com dados ficticios do seed | regravar quando a tela mudar; depende das branches de roteamento, aviso de seguranca, fila, seed, textos da UI e `/team` | revisao humana |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
 | Relatorio mensal para a fiscalizacao | ✅ | `GET /web/support/reports/monthly.csv` e "Baixar CSV" na `/team`: um caso por linha, prazo gravado na abertura (`sla_minutes`/`sla_basis`, migration 020), resultado contra o prazo com pausas descontadas, `late_reason` obrigatorio ao fechar atrasado (lista fechada); sem dado pessoal; `;` e BOM para Excel pt-BR | revisar colunas e motivos com a fiscalizacao real | `tests/test_monthly_report.py`, `tests/integration/test_monthly_report_postgres.py` |
+| Superficies herdadas fora do nucleo | ✅ | removidos a rota `/zoom` (bot de reuniao via Recall.ai, `RECALL_API_KEY`, `ZOOM_WEBHOOK_SECRET`), o atalho de checkout com link de pagamento (`DomainCheckoutConfig`) e o contrato documentado de `/web/fontesan/leads`, que nao existe neste repositorio; `rate_limit_exceeded` registra so `client_host_hash` | — | `tests/test_auth.py`, `tests/test_rate_limit.py` |
+| Lint na CI | ✅ | `ruff check app tests scripts` no job de CI, regras de correcao (`E4`, `E7`, `E9`, `F`) em `pyproject.toml` | ampliar as regras aos poucos; sem checagem de tipos | CI |
 | Detector de CPF com digito verificador | ✅ | `[REDACTED_CPF]` (mascara sempre; 11 digitos so com digito verificador), datas ISO e protocolos rotulados preservados, `REDACTION_VERSION` `phase0-v2` com leitura de `phase0-v1` | protocolo sem rotulo continua mascarado (limite aceito) | `tests/test_pii_cpf.py`, `tests/test_pii_card.py` |
 
 ## Limites conhecidos (sem correcao nesta copia)
 
 Detalhe em `docs/ficha-do-sistema.md` ("Limites conhecidos").
 
-- `rate_limit_exceeded` registra o IP do cliente em claro (`app/main.py:127`, `:162`).
 - O campo `to` do `operational_outbox.payload_sanitized` guarda o telefone em claro; nao ha purga do outbox.
 - O cookie de lembrete do operador carrega o telefone E.164 em claro (`app/support/staff_auth.py:14-19`).
 - `lgpd-titular` nao declara `low_minutes` no bloco `sla`: um caso `low` cairia no

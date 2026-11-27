@@ -55,6 +55,7 @@ que vai mexer (`docs/navigation.md` diz quais).
 ## Validacao rapida
 
 ```bash
+python -m ruff check app tests scripts
 python -m compileall app tests scripts
 python -m pytest
 python -m app.evals.run_domain_eval concessoes-manutencao

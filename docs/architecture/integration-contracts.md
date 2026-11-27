@@ -21,14 +21,11 @@ Rotas protegidas atualmente:
 - `POST /feedback`
 - `POST /ingestion/preview`
 - `GET /ingestion/{domain_name}/preview`
-- `POST /zoom/join`
-- `POST /zoom/webhook`
 
 Rotas publicas controladas atualmente:
 
 - `POST /web/chat`
 - `POST /web/feedback`
-- `POST /web/fontesan/leads`
 - `POST /web/auth/whatsapp/start` quando `ENABLE_WEB_WHATSAPP_AUTH=true`
 - `POST /web/auth/whatsapp/confirm` quando `ENABLE_WEB_WHATSAPP_AUTH=true`
 - `GET /web/auth/session` quando `ENABLE_WEB_WHATSAPP_AUTH=true`
@@ -42,9 +39,7 @@ Regra:
 - em staging, quando `ENABLE_CHAT_UI=true`, `POST /chat` tambem aceita `X-LLM-API-Key` para testes pela `/chat-ui`; esse atalho nao funciona em `APP_ENV=production`
 - `GET /health` continua publica no estado atual do MVP
 - `GET /health/ready` exige `X-API-Key` porque inclui diagnosticos operacionais
-- `POST /zoom/webhook` tambem aceita segredo compartilhado via query string quando `ZOOM_WEBHOOK_SECRET` estiver configurado para integracoes controladas com Recall/Zoom
 - `POST /web/chat` e `POST /web/feedback` nao aceitam nem exigem `X-API-Key` no navegador; essa superficie publica controlada usa sessao anonima por cookie e continua chamando o mesmo core do agente no backend
-- `POST /web/fontesan/leads` tambem nao exige `X-API-Key`, mas nao tem sessao anonima nenhuma (nao ha cookie): e um formulario de contato de disparo unico de um site estatico separado (fontesan), rate limitado por IP
 - as rotas `/web/auth/*` ficam ocultas com `404` enquanto `ENABLE_WEB_WHATSAPP_AUTH=false`
 
 ## WhatsApp OTP V1A
@@ -350,74 +345,6 @@ Regras operacionais:
 - o browser nao envia `X-API-Key`
 - com `PERSISTENCE_BACKEND=postgres`, o feedback publico recebe confirmacao
   somente depois do commit; sem PostgreSQL, retorna `pending_persistence`
-
-## `POST /web/fontesan/leads`
-
-Objetivo:
-
-- receber o formulario de contato do site estatico separado da Fontesan
-  (consultoria em vigilancia sanitaria) e persistir o lead no mesmo Postgres
-  operacional deste backend, sem subir infraestrutura de banco nova
-- este endpoint nao pertence a `app/domain_engine`: nao tem persona, prompt
-  nem base de conhecimento, e paralelo a `app/feedback`
-
-Entrada minima:
-
-```json
-{
-  "nome": "Ana Souza",
-  "tipo_negocio": "Padaria",
-  "telefone": "11999999999",
-  "mensagem": "Recebi uma notificacao e preciso de ajuda."
-}
-```
-
-Validacoes:
-
-- `nome`: obrigatorio, maximo 120 caracteres, espacos internos colapsados
-- `tipo_negocio`: obrigatorio; qualquer valor fora de
-  `Padaria | Restaurante ou cozinha | Mercado ou hortifrúti | Outro` cai em
-  `Outro` (mesmo padrao defensivo de `safe_feedback_source`)
-- `telefone`: obrigatorio, maximo 40 caracteres, aceito como texto livre (nao
-  ha parsing de formato E.164, o site nao normaliza antes de enviar)
-- `mensagem`: opcional, maximo 2000 caracteres
-- `site`: campo honeypot espelhado do form; qualquer valor nao vazio faz a
-  rota responder sucesso normalmente sem gravar nada (`storage:
-  "rejected_honeypot"`), para nao sinalizar ao bot que foi pego
-- campos extras sao rejeitados com `422`
-
-Saida atual:
-
-```json
-{
-  "lead_id": "uuid",
-  "accepted": true,
-  "status": "accepted",
-  "storage": "pending_persistence"
-}
-```
-
-Regras operacionais:
-
-- o browser nao envia `X-API-Key` nem cookie de sessao
-- `nome` e `telefone` sao gravados como recebidos (so normalizados por
-  espaco em branco): sao o proprio dado de contato que o formulario existe
-  para coletar, entao **nao** passam por `sanitize_for_persistence` (que
-  redigiria um numero de telefone real). `mensagem` passa por
-  `sanitize_for_persistence` como defesa em profundidade, igual
-  `feedback.comment`
-- rate limit dedicado por IP via `FONTESAN_LEADS_RATE_LIMIT_PER_MINUTE`
-  (padrao 5/min), aplicado no mesmo middleware de `/chat` e `/web/chat`
-- com `PERSISTENCE_BACKEND=postgres`, grava em `fontesan_leads`
-  (`migrations/020_fontesan_leads.sql`); sem PostgreSQL, retorna
-  `pending_persistence`
-- **dependencia de infraestrutura fora deste repositorio**: como nao ha
-  `CORSMiddleware` configurado, o site da Fontesan so consegue chamar esta
-  rota se for servido same-origin com este backend (Nginx do dominio da
-  Fontesan servindo os arquivos estaticos e fazendo proxy de
-  `/web/fontesan/leads` para este processo, mesmo padrao de
-  `docs/setup/environments.md`). Um dominio separado sem
-  CORS explicito faz o navegador bloquear o `fetch`
 
 ## `POST /chat`
 
@@ -1670,28 +1597,6 @@ Regras:
   nao devem aparecer em logs.
 - a assinatura generica do Hermes usa HMAC SHA-256 do corpo bruto no header
   `X-Webhook-Signature`, sem prefixo `sha256=`.
-
-## `POST /zoom/webhook`
-
-Objetivo:
-
-- receber callbacks controlados do bot de reuniao
-- disparar processamento assinado do chat recebido sem expor o endpoint para trafego anonimo
-
-Autenticacao aceita:
-
-- `X-API-Key` para chamadas internas controladas
-- query param `token` quando igual ao segredo privado configurado em `ZOOM_WEBHOOK_SECRET`
-
-Regras:
-
-- chamadas sem `X-API-Key` valida ou sem `token` valido retornam `403`
-- quando `ZOOM_WEBHOOK_SECRET` estiver configurado, `POST /zoom/join` anexa esse segredo ao `webhook_url` enviado ao Recall/Zoom
-- o backend nao deve logar payload bruto do webhook, mensagem completa, nomes reais de participantes ou segredos
-- falhas do provider em `POST /zoom/join` retornam apenas
-  `zoom_provider_unavailable` ou `zoom_provider_rejected_request`, nunca o
-  corpo bruto do provider
-
 
 ## Minion de diagnostico (dominio hospedagem)
 

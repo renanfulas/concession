@@ -31,6 +31,29 @@ def test_chat_rate_limit_returns_429_with_retry_after(monkeypatch) -> None:
     get_settings.cache_clear()
 
 
+def test_rate_limit_log_never_carries_the_client_ip(monkeypatch, caplog) -> None:
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "1")
+    get_settings.cache_clear()
+    client = TestClient(create_app())
+    payload = {
+        "domain": "suporte-vps-whatsapp",
+        "message": "Como instalar a Evolution API no VPS?",
+    }
+
+    client.post("/chat", headers=API_KEY_HEADER, json=payload)
+    with caplog.at_level("INFO", logger="app.main"):
+        limited = client.post("/chat", headers=API_KEY_HEADER, json=payload)
+
+    assert limited.status_code == 429
+    events = [r.getMessage() for r in caplog.records if "rate_limit_exceeded" in r.getMessage()]
+    assert events, "o evento rate_limit_exceeded precisa ser registrado"
+    # TestClient usa "testclient" como host do cliente; o log leva so o hash.
+    assert all("testclient" not in event for event in events)
+    assert all('"client_host_hash": "' in event for event in events)
+
+    get_settings.cache_clear()
+
+
 def test_rate_limit_applies_only_to_chat(monkeypatch) -> None:
     monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "1")
     get_settings.cache_clear()

@@ -54,7 +54,7 @@ def test_hermes_client_signs_otp_delivery(monkeypatch: pytest.MonkeyPatch) -> No
     assert headers["X-Delivery-ID"] == "challenge-id"
     assert not headers["X-Webhook-Signature"].startswith("sha256=")
     body = captured["data"]
-    timestamp = headers["X-Webhook-Timestamp"]
+    assert headers["X-Webhook-Timestamp"]
     expected = hmac.new(
         b"hermes-secret",
         body,

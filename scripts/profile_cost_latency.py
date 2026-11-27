@@ -10,7 +10,7 @@ O que e medido de fato (real):
 - ``total_ms`` do pipeline, via ``ChatFlowService.answer`` (offline).
 - numero de tokens de entrada do prompt realmente montado (``build_prompt``).
 - fracao de casos que chegam ao LLM (os demais sao atalhos sem custo de modelo:
-  checkout, bloqueio de seguranca ou ausencia de contexto).
+  bloqueio de seguranca ou ausencia de contexto).
 
 O que e estimado (configuravel):
 - tokens de saida por chamada (orcamento assumido, ``--output-tokens``).
@@ -42,7 +42,6 @@ from app.domain_engine.loader import DomainLoader  # noqa: E402
 from app.domain_engine.models import DomainConfig  # noqa: E402
 from app.evals.loader import EvalSuiteLoader  # noqa: E402
 from app.core.errors import ProviderError  # noqa: E402
-from app.core.text import fold  # noqa: E402
 from app.handoff.service import HandoffService  # noqa: E402
 from app.llm.service import LLMService  # noqa: E402
 from app.orchestration.chat_flow import ChatFlowService  # noqa: E402
@@ -110,7 +109,7 @@ class CaseMetrics:
     input_tokens: int
     query_tokens: int
     llm_eligible: bool
-    short_circuit: str | None  # checkout | blocked | no_context | None
+    short_circuit: str | None  # blocked | no_context | None
     llm_ms: float | None = None  # so preenchido em modo --live
     output_tokens: int | None = None  # so preenchido em modo --live
 
@@ -131,18 +130,9 @@ def _classify_short_circuit(
 ) -> str | None:
     """Identifica atalhos que evitam o LLM, espelhando o ChatFlowService.
 
-    Retorna o tipo de atalho (``checkout``, ``blocked``, ``no_context``) ou
+    Retorna o tipo de atalho (``blocked``, ``no_context``) ou
     ``None`` quando o caso de fato gastaria uma chamada de modelo.
     """
-    text = fold(question).strip()
-    checkout = getattr(domain, "checkout", None)
-    if checkout is not None and checkout.enabled and checkout.payment_link and text:
-        declines = [*checkout.decline_phrases, *domain.handoff.explicit_human_phrases]
-        declined = any(fold(p).strip() in text for p in declines if p.strip())
-        intent = any(fold(p).strip() in text for p in checkout.intent_phrases if p.strip())
-        if intent and not declined:
-            return "checkout"
-
     reasons = handoff_service.inspect_question(domain, question)
     if any(reason in ChatFlowService.BLOCKING_REASONS for reason in reasons):
         return "blocked"

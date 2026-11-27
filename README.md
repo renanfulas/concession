@@ -108,7 +108,7 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 1134 passam, 47 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
+| Testes automatizados (`python -m pytest`) | 1225 passam, 51 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
 | Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
 | Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
@@ -325,7 +325,7 @@ translated.
 
 ### Status and limits
 
-The status table above applies as is. In short: 1134 tests pass. The 47
+The status table above applies as is. In short: 1225 tests pass. The 51
 PostgreSQL integration tests are skipped locally and run against a real
 database in the `postgres` job of Phase 0 Gates, including priority
 persistence from `record_chat` to the console API. The domain evals pass

@@ -58,7 +58,7 @@ Does not:
 | Per-case `wa_id` (E.164 phone) | `case_whatsapp_bindings` (migration 016, `app/support/wa_binding.py`) | **reversibly** encrypted (Fernet, key `SUPPORT_WA_ENC_KEY`) plus an HMAC for lookup; wiped when the case closes or is cancelled, or after `SUPPORT_WA_BINDING_MAX_DAYS` (default 15 days) | legitimate interest (art. 7, IX) or public policy execution (art. 7, III); to be confirmed |
 | Destination phone (citizen and staff) | `to` field of `operational_outbox.payload_sanitized` (`app/support/whatsapp_bridge.py:243-252`; `app/db/operational.py:556-558`) | stored **in clear**, despite the column name, so the dispatcher can deliver; no outbox purge routine exists in the code | same (citizen); legitimate interest (art. 7, IX) for staff phones |
 | Staff member E.164 phone | HttpOnly remember cookie `<token>.<E.164>` in the staff member's browser (`app/support/staff_auth.py:14-19`, `:118`) | the database keeps only the token HMAC; the phone is in clear in the staff member's own cookie | legitimate interest (art. 7, IX): team access management |
-| Client IP address | `rate_limit_exceeded` log (`app/main.py:127`, `:162`) | logged **in clear** in the `client_host` field | legitimate interest (art. 7, IX): channel security; to be confirmed |
+| Client IP address | `rate_limit_exceeded` log (`app/main.py`, `/chat` and `/web/chat` middleware) | only a truncated HMAC SHA-256 (`client_host_hash`, keyed by `PERSISTENCE_HASH_SECRET`); the clear IP never reaches the log | legitimate interest (art. 7, IX): channel security; to be confirmed |
 | Asset code and address | maintenance ticket | operational, not personal | — |
 
 Sensitive data (art. 11) is not collected. Children's data is not collected on purpose.
@@ -103,7 +103,6 @@ Suggested rating: **medium risk**, mandatory human review.
 
 ## Known limits
 
-- The `rate_limit_exceeded` log records the client IP in clear (`app/main.py:127`, `:162`).
 - The `to` field of `operational_outbox.payload_sanitized` keeps the phone in clear, and the code has no outbox purge.
 - The staff remember cookie carries the E.164 phone in clear.
 - The `lgpd-titular` SLA `basis` cites art. 19, II for every `pedido_titular`, including deletion and correction, whose deadline follows regulation (art. 18, §5); there the 15 days are an internal target.

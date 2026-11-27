@@ -75,27 +75,6 @@ class DomainHandoffConfig(DomainModel):
     escalation_rules: list[DomainHandoffRuleConfig] = Field(default_factory=list)
 
 
-class DomainCheckoutConfig(DomainModel):
-    """Optional deterministic payment closing for a sales domain.
-
-    When ``enabled`` and the inbound message expresses payment intent (an
-    ``intent_phrases`` match), the flow answers with ``message`` instead of running
-    the LLM. ``{link}`` is substituted with ``payment_link`` and ``{value}`` with a
-    short recap of the value the bot last quoted in this conversation (lines that
-    mention ``R$`` in the most recent assistant message); when no value is found the
-    ``{value}`` line is dropped. It deliberately yields to the safety path when a
-    ``decline_phrases`` term appears (e.g. asking the bot to store a card number) so
-    escalation/refusal behavior is preserved. The message never echoes the inbound
-    text, so card data is never repeated back.
-    """
-
-    enabled: bool = False
-    payment_link: str = ""
-    message: str = "Certo\n\nSeu link foi gerado {link}"
-    intent_phrases: list[str] = Field(default_factory=list)
-    decline_phrases: list[str] = Field(default_factory=list)
-
-
 class DomainSlaConfig(DomainModel):
     """Optional per-domain SLA for the support console, in minutes per priority.
 
@@ -150,7 +129,6 @@ class DomainConfig(DomainModel):
     routing: DomainRoutingConfig = Field(default_factory=DomainRoutingConfig)
     response: DomainResponseConfig = Field(default_factory=DomainResponseConfig)
     handoff: DomainHandoffConfig = Field(default_factory=DomainHandoffConfig)
-    checkout: DomainCheckoutConfig = Field(default_factory=DomainCheckoutConfig)
     sla: DomainSlaConfig = Field(default_factory=DomainSlaConfig)
     knowledge: DomainKnowledgeConfig = Field(default_factory=DomainKnowledgeConfig)
     llm: DomainLLMConfig = Field(default_factory=DomainLLMConfig)

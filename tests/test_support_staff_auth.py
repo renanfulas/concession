@@ -330,7 +330,7 @@ def test_logout_with_forget_device_removes_the_hint() -> None:
 
 def test_start_purges_expired_sessions() -> None:
     service, staff_store, delivery, clock = _service()
-    login = _login(service, delivery)
+    _login(service, delivery)
 
     clock[0] = clock[0] + timedelta(days=2)
     service.start(phone=STAFF_PHONE, hint_cookie=None, client_host="10.0.0.1")
