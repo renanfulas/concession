@@ -240,9 +240,36 @@ Saida atual:
   "handoff_reasons": [],
   "references": ["domains/suporte-vps-whatsapp/knowledge/faqs/qrcode-whatsapp.md"],
   "support_code": "uuid",
-  "error_code": null
+  "error_code": null,
+  "support_deep_link": null,
+  "notices": ["Segurança primeiro: ... ligue 193 (Corpo de Bombeiros)."],
+  "case": {
+    "protocol": "7DA0-38C9",
+    "status": "registrado",
+    "priority": "urgent",
+    "priority_label": "Urgente",
+    "deadline_label": "até 4 horas",
+    "basis": "Anexo de Níveis de Serviço (demo), item 3: ...",
+    "channel_label": "Manutenção de Mobiliário Urbano"
+  },
+  "sources": [
+    { "title": "Risco a pessoas: fio exposto, vidro quebrado, estrutura solta", "kind": "Pergunta frequente" }
+  ]
 }
 ```
+
+Campos para a tela do cidadao (`app/support/public_case.py`):
+
+- `notices`: os avisos fixos das regras que casaram; continuam tambem no
+  inicio de `answer` (outros canais e os evals leem `answer`), e a tela os
+  mostra como alerta separado;
+- `case`: o chamado que este turno colocou na fila, com protocolo curto
+  (8 primeiros hex do `request_id`), prioridade, prazo e base do prazo pela
+  politica do dominio (a mesma gravada no caso, migration 020); `status`
+  `registrado` ou `aguardando_confirmacao` (gate de consentimento). `null`
+  quando nenhum caso foi para a fila;
+- `sources`: ate 3 documentos consultados, pelo titulo `# ` do arquivo, sem
+  repeticao; `references` segue com os caminhos estaveis para integracoes.
 
 Regras operacionais:
 

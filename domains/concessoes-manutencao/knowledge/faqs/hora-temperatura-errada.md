@@ -1,4 +1,4 @@
-# Relogio com hora ou temperatura errada
+# Relógio com hora ou temperatura errada
 
 Hora errada, horario atrasado ou adiantado, ou temperatura incorreta no relogio de rua entram no item 3.3 do Anexo de Niveis de Servico (demo): prazo de 48 horas.
 

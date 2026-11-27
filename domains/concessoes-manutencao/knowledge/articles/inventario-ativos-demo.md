@@ -1,4 +1,4 @@
-# Inventario de ativos (base ficticia de demonstracao)
+# Inventário de ativos (base fictícia de demonstração)
 
 > Codigos e localizacoes ficticios, criados para demonstracao. Nao correspondem a equipamentos reais.
 

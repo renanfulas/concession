@@ -1,4 +1,4 @@
-# Aviso de Privacidade (demonstracao)
+# Aviso de Privacidade (demonstração)
 
 > Aviso ficticio, escrito para demonstracao. Descreve uma concessionaria hipotetica de mobiliario urbano e midia exterior; nao e o aviso de nenhuma empresa real.
 

@@ -15,10 +15,16 @@
 
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="3" y="4" width="26" height="4" rx="2" />
+          <rect x="6" y="8" width="3" height="20" rx="1.5" />
+          <rect x="12" y="11" width="14" height="10" rx="2" class="brand-panel" />
+          <circle cx="19" cy="16" r="2.4" class="brand-dot" />
+          <rect x="3" y="27" width="26" height="2" rx="1" />
+        </svg>
         <div>
           <h1>Fila do time</h1>
-          <p class="brand-sub">Console de atendimento · semáforo de SLA</p>
+          <p class="brand-sub">Manutenção e privacidade numa fila só · prazo de cada caso</p>
         </div>
       </div>
       <div id="session-box" class="session-box" hidden>
@@ -108,6 +114,29 @@
       </section>
 
       <section id="view-queue" hidden>
+        <section class="kpis" aria-label="Resumo da fila por semáforo">
+          <button type="button" class="kpi kpi-red" data-color="red" aria-pressed="false">
+            <span id="kpi-red" class="kpi-value">–</span>
+            <span class="kpi-label">Estourados</span>
+          </button>
+          <button type="button" class="kpi kpi-yellow" data-color="yellow" aria-pressed="false">
+            <span id="kpi-yellow" class="kpi-value">–</span>
+            <span class="kpi-label">Atenção</span>
+          </button>
+          <button type="button" class="kpi kpi-green" data-color="green" aria-pressed="false">
+            <span id="kpi-green" class="kpi-value">–</span>
+            <span class="kpi-label">No prazo</span>
+          </button>
+          <button type="button" class="kpi kpi-paused" data-color="paused" aria-pressed="false">
+            <span id="kpi-paused" class="kpi-value">–</span>
+            <span class="kpi-label">Pausados</span>
+          </button>
+          <div class="kpi kpi-total">
+            <span id="kpi-total" class="kpi-value">–</span>
+            <span class="kpi-label">Na fila</span>
+          </div>
+        </section>
+
         <div class="toolbar">
           <form id="filters" class="filters" aria-label="Filtros da fila">
             <label>

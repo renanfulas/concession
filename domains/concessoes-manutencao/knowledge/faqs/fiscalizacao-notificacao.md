@@ -1,4 +1,4 @@
-# Notificacao da fiscalizacao ou auto de infracao
+# Notificação da fiscalização ou auto de infração
 
 Notificacoes, autos de infracao e duvidas sobre multa ou penalidade sao tratados por uma pessoa da equipe de contrato, nunca pelo atendimento automatico.
 

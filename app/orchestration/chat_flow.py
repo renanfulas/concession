@@ -64,6 +64,10 @@ class ChatFlowService:
             customer_id=customer_id,
         )
         if "answer" in result:
+            notices = self._rule_notices(domain, result.get("handoff_reasons") or [])
+            # ``answer`` keeps the notices prepended (every channel and the evals
+            # read it); ``notices`` lets a rich client render them apart.
+            result["notices"] = notices
             result["answer"] = self._with_rule_notices(
                 domain, result.get("handoff_reasons") or [], str(result["answer"] or "")
             )
@@ -74,10 +78,8 @@ class ChatFlowService:
         return result
 
     @staticmethod
-    def _with_rule_notices(
-        domain: DomainConfig, reasons: list[str], answer: str
-    ) -> str:
-        """Prepend the ``notice`` of every matched escalation rule, once each."""
+    def _rule_notices(domain: DomainConfig, reasons: list[str]) -> list[str]:
+        """The ``notice`` of every matched escalation rule, once each, in rule order."""
         matched = set(reasons)
         notices: list[str] = []
         handoff = getattr(domain, "handoff", None)
@@ -85,6 +87,14 @@ class ChatFlowService:
             notice = (rule.notice or "").strip()
             if rule.reason in matched and notice and notice not in notices:
                 notices.append(notice)
+        return notices
+
+    @classmethod
+    def _with_rule_notices(
+        cls, domain: DomainConfig, reasons: list[str], answer: str
+    ) -> str:
+        """Prepend the ``notice`` of every matched escalation rule, once each."""
+        notices = cls._rule_notices(domain, reasons)
         if not notices:
             return answer
         return "\n\n".join([*notices, answer] if answer else notices)

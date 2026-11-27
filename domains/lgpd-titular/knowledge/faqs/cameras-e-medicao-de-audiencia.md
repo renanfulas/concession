@@ -1,4 +1,4 @@
-# Os paineis me filmam? Como funciona a medicao de audiencia
+# Os painéis me filmam? Como funciona a medição de audiência
 
 Pelo Aviso de Privacidade (demo), os sensores dos paineis digitais fazem contagem agregada: quantas pessoas passam e quanto tempo, em media, a tela recebe atencao.
 
