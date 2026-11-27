@@ -160,6 +160,9 @@ def _real_router() -> DomainRouter:
         ("Como voces tratam meus dados pessoais pela LGPD?", "lgpd-titular"),
         ("Voces estao me filmando no metro?", "lgpd-titular"),
         ("Quero falar com o encarregado de privacidade", "lgpd-titular"),
+        # "imagem" sozinho empatava "painel sem imagem" com o canal de privacidade.
+        ("O painel PNL-2044 esta sem imagem", "concessoes-manutencao"),
+        ("Quero saber onde fica guardada a minha imagem", "lgpd-titular"),
     ],
 )
 def test_real_configs_route_to_expected_domain(text: str, expected_domain: str) -> None:

@@ -69,9 +69,9 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 949 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
-| Evals `concessoes-manutencao` (base + confinamento) | 27/27 |
-| Evals `lgpd-titular` (base + confinamento) | 26/26 |
+| Testes automatizados (`python -m pytest`) | 958 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
+| Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
+| Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
 | Gravacao da prioridade no ticket contra PostgreSQL real | nao verificada nesta copia (suite de integracao precisa de Docker) |
 | Tela web do console (`/team`) | nao existe; o console e uma API |

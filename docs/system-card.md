@@ -71,7 +71,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Control | Where | Evidence |
 | --- | --- | --- |
 | Scope, prompt and secret confinement | `docs/security/llm-confinement.md`, `domains/*/evals/confinement/` | confinement evals 33/33 |
-| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals 20/20 across both domains |
+| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals 26/26 across both domains, including negative cases (term present with another meaning) |
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_privacy.py` |
 | Logs without PII, tokens or raw `session_id` | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
@@ -83,7 +83,7 @@ Suggested rating: **medium risk**, mandatory human review.
 ## Known limits
 
 - Without an LLM key, evals check retrieval, classification and handoff, not generated text quality.
-- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue.
+- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue. Known false positives are handled with per-rule `ignore_terms` and proven by negative eval cases; words in between the terms ("relogio REL-0423 esta apagado") still do not match.
 - No dedicated CPF detector with check digits.
 - Writing the case priority to a real PostgreSQL was not verified in this copy.
 - No web UI for the console; the console is an API.

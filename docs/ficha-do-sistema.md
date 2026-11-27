@@ -71,7 +71,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Controle | Onde | Evidencia |
 | --- | --- | --- |
 | Confinamento de escopo, prompt e segredo | `docs/security/llm-confinement.md`, `domains/*/evals/confinement/` | evals de confinamento 33/33 |
-| Classificacao testada | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | evals base 20/20 nos dois dominios |
+| Classificacao testada | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | evals base 26/26 nos dois dominios, incluindo casos negativos (termo presente com outro sentido) |
 | Prazo deterministico | `domain.yaml` bloco `sla`, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Mascaramento antes de persistir | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_privacy.py` |
 | Logs sem PII, token ou `session_id` bruto | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
@@ -83,7 +83,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 ## Limites conhecidos
 
 - Sem chave de LLM, os evals validam retrieval, classificacao e escalonamento, mas nao a qualidade do texto gerado.
-- Classificacao por termos (substring): sinonimos nao previstos caem em `low_confidence` e vao para uma pessoa; isso e seguro, mas pode gerar fila.
+- Classificacao por termos (substring): sinonimos nao previstos caem em `low_confidence` e vao para uma pessoa; isso e seguro, mas pode gerar fila. Falsos positivos conhecidos sao tratados com `ignore_terms` por regra e provados por casos negativos; palavras entre os termos ("relogio REL-0423 esta apagado") ainda nao casam.
 - CPF nao tem detector proprio com digito verificador.
 - A gravacao da prioridade no PostgreSQL real nao foi verificada nesta copia.
 - Nao existe tela web do console; o console e uma API.

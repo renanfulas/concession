@@ -51,7 +51,8 @@ routing:
     - cameras
     - filmando
     - filmagem
-    - imagem
+    # "imagem" sozinho levava "painel sem imagem" para o canal de privacidade.
+    - minha imagem
     - vazamento
     - anpd
     - excluir meus
@@ -122,7 +123,13 @@ handoff:
         - procon
         - reclamacao formal
         - denuncia
-        - processar
+        # "processar" sozinho casava com "processar meu pedido".
+        - vou processar
+        - processar voces
+        - processar a empresa
+        - acao judicial
+        - processo judicial
+        - advogado
     - reason: pedido_titular
       priority: normal
       terms:
@@ -131,9 +138,12 @@ handoff:
         - copia dos dados
         - acesso aos dados
         - excluir
+        - exclusao
         - apagar
         - eliminar
+        - eliminacao
         - corrigir
+        - correcao
         - atualizar meu telefone
         - portabilidade
         - revogar
