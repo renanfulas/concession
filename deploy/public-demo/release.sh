@@ -34,7 +34,10 @@ set -a
 set +a
 (cd "$release" && "$(dirname "$(readlink -f "$0")")/migrate-demo.sh")
 
-previous="$(readlink -f "$base/current" 2>/dev/null || true)"
+previous=""
+if [[ -L "$base/current" ]]; then
+  previous="$(readlink -f "$base/current")"
+fi
 ln -sfn "$release" "$base/current-next"
 mv -Tf "$base/current-next" "$base/current"
 systemctl restart concession-demo
