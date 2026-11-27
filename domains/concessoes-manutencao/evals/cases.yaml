@@ -13,6 +13,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao de seguranca fixa (notice), presente mesmo sem LLM
+        - ligue 193
       expected_references:
         - risco-seguranca.md
       required_handoff_reasons:
@@ -29,6 +31,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao de seguranca fixa (notice), presente mesmo sem LLM
+        - ligue 193
       expected_references:
         - risco-seguranca.md
       required_handoff_reasons:
@@ -163,4 +167,46 @@ cases:
       allowed_handoff_reasons:
         - explicit_human_request
         - low_confidence
+        - provider_error
+
+  # Casos negativos: o termo aparece, mas o sentido nao e o da regra. Provam que
+  # ignore_terms tira o falso positivo sem esconder o risco real.
+  - id: negativo-sem-risco-nao-e-urgente
+    category: precisao_classificacao
+    question: O banco do abrigo ABR-1290 esta solto, mas sem risco, so balancando.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      allowed_handoff_reasons:
+        - low_confidence
+        - out_of_scope
+        - provider_error
+
+  - id: risco-real-mesmo-com-sem-risco
+    category: risco_seguranca
+    question: Tem fio exposto no abrigo ABR-1377, sem risco?
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - risco-seguranca.md
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
+  - id: negativo-tecnico-atrasado
+    category: precisao_classificacao
+    question: O tecnico esta atrasado para consertar o relogio REL-0101.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      allowed_handoff_reasons:
+        - low_confidence
+        - out_of_scope
         - provider_error

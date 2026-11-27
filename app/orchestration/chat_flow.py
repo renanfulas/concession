@@ -11,6 +11,7 @@ from app.handoff.service import HandoffService
 from app.llm.service import LLMService
 from app.orchestration.confidence import compute_confidence
 from app.orchestration.prompt_builder import build_prompt
+from app.orchestration.references import public_references
 from app.retrieval.service import RetrievalService
 from app.conversations.service import ConversationHistoryService, hash_session
 from app.conversations.session_state import SessionState, SessionStateStore
@@ -62,11 +63,31 @@ class ChatFlowService:
             channel=channel,
             customer_id=customer_id,
         )
+        if "answer" in result:
+            result["answer"] = self._with_rule_notices(
+                domain, result.get("handoff_reasons") or [], str(result["answer"] or "")
+            )
         # Hot-tier state write (non-authoritative, fail-open). No-op without a store.
         self._record_session_state(
             domain=domain, session_id=session_id, channel=channel, result=result
         )
         return result
+
+    @staticmethod
+    def _with_rule_notices(
+        domain: DomainConfig, reasons: list[str], answer: str
+    ) -> str:
+        """Prepend the ``notice`` of every matched escalation rule, once each."""
+        matched = set(reasons)
+        notices: list[str] = []
+        handoff = getattr(domain, "handoff", None)
+        for rule in getattr(handoff, "escalation_rules", None) or ():
+            notice = (rule.notice or "").strip()
+            if rule.reason in matched and notice and notice not in notices:
+                notices.append(notice)
+        if not notices:
+            return answer
+        return "\n\n".join([*notices, answer] if answer else notices)
 
     def _record_session_state(
         self,
@@ -194,7 +215,9 @@ class ChatFlowService:
                 "confidence": 0.0,
                 "escalated": True,
                 "handoff_reasons": pre_handoff_reasons,
-                "references": [chunk.source for chunk in chunks],
+                "references": public_references(
+                    (chunk.source for chunk in chunks), domain.name
+                ),
                 "error_code": None,
                 "provider_failure_kind": None,
                 "observability": self._build_observability(
@@ -250,7 +273,9 @@ class ChatFlowService:
                 "confidence": confidence,
                 "escalated": True,
                 "handoff_reasons": handoff_reasons,
-                "references": [chunk.source for chunk in chunks],
+                "references": public_references(
+                    (chunk.source for chunk in chunks), domain.name
+                ),
                 "error_code": error_code,
                 "provider_failure_kind": provider_failure_kind,
             }
@@ -300,7 +325,9 @@ class ChatFlowService:
             "confidence": confidence,
             "escalated": bool(handoff_reasons),
             "handoff_reasons": handoff_reasons,
-            "references": [chunk.source for chunk in chunks],
+            "references": public_references(
+                (chunk.source for chunk in chunks), domain.name
+            ),
             "error_code": error_code,
             "provider_failure_kind": provider_failure_kind,
             "observability": self._build_observability(

@@ -51,7 +51,8 @@ routing:
     - cameras
     - filmando
     - filmagem
-    - imagem
+    # "imagem" sozinho levava "painel sem imagem" para o canal de privacidade.
+    - minha imagem
     - vazamento
     - anpd
     - excluir meus
@@ -94,6 +95,8 @@ handoff:
   escalation_rules:
     - reason: incidente_dados
       priority: urgent
+      # Texto fixo, mostrado antes de qualquer resposta (inclusive sem LLM).
+      notice: "Enquanto o encarregado analisa: troque as senhas das contas que voce acha que foram afetadas e nao informe senha nem codigo a quem pedir em nome deste canal. Este canal nunca pede senha, CPF ou codigo por mensagem."
       terms:
         - vazamento
         - vazaram
@@ -122,7 +125,13 @@ handoff:
         - procon
         - reclamacao formal
         - denuncia
-        - processar
+        # "processar" sozinho casava com "processar meu pedido".
+        - vou processar
+        - processar voces
+        - processar a empresa
+        - acao judicial
+        - processo judicial
+        - advogado
     - reason: pedido_titular
       priority: normal
       terms:
@@ -131,23 +140,30 @@ handoff:
         - copia dos dados
         - acesso aos dados
         - excluir
+        - exclusao
         - apagar
         - eliminar
+        - eliminacao
         - corrigir
+        - correcao
         - atualizar meu telefone
         - portabilidade
         - revogar
         - anonimizar
         - parar de usar
 
-# Prazo legal do titular: declaracao completa em ate 15 dias (LGPD art. 19, II).
-# urgent/high sao metas internas de triagem do encarregado, ficticias para a
-# demonstracao; nao sao prazos legais.
+# Prazo legal do titular para confirmacao/acesso: declaracao completa em ate
+# 15 dias (LGPD art. 19, II). Para correcao, eliminacao e os demais direitos do
+# art. 18, o prazo segue regulamento (art. 18, §5º); a demo aplica os mesmos 15
+# dias como meta interna. urgent/high sao metas internas de triagem do
+# encarregado, ficticias para a demonstracao; nao sao prazos legais.
+# Sem `low_minutes`: `low` cairia no SLA global (24h), mais curto que `normal`;
+# nenhuma regra deste dominio usa `low` hoje (ver docs/project-map.md).
 sla:
   basis: "LGPD art. 19, II: ate 15 dias para a declaracao completa (normal). Urgente e alta sao metas internas de demonstracao."
   urgent_minutes: 240     # 4h  - triagem de incidente (meta interna demo)
   high_minutes: 1440      # 24h - terceiros / autoridade (meta interna demo)
-  normal_minutes: 21600   # 15 dias - pedido do titular (art. 19, II)
+  normal_minutes: 21600   # 15 dias - pedido do titular (acesso: art. 19, II; demais: meta interna demo)
 
 knowledge:
   sources:

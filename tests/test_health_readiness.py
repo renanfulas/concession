@@ -543,3 +543,19 @@ def test_readiness_route_is_protected() -> None:
     response = TestClient(create_app()).get("/health/ready")
 
     assert response.status_code == 403
+
+
+def test_default_domain_has_a_single_source_and_is_the_demo_maintenance_domain(
+    monkeypatch,
+) -> None:
+    from app.core.config import Settings
+
+    monkeypatch.delenv("DEFAULT_DOMAIN", raising=False)
+    monkeypatch.delenv("ENABLE_WEB_DOMAIN_ROUTER", raising=False)
+    defaults = Settings(_env_file=None)
+    runtime = DisabledRuntime()
+    runtime.settings = None
+
+    assert defaults.default_domain == "concessoes-manutencao"
+    assert defaults.enable_web_domain_router is True
+    assert HealthService(runtime)._configured_domain() == defaults.default_domain
