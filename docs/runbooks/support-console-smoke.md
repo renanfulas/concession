@@ -64,6 +64,56 @@ Executar na origem do backend (ou via proxy `/web/*`), guardando os
     `response_times` (`null` se ainda nao houver caso fechado/com acao na
     janela); `?window=7d` → `422 invalid_window`.
 
+## Seed de demonstracao (somente dev/test, banco local)
+
+Para ver a fila com semaforo sem depender de trafego real, o script
+`scripts/seed_demo_cases.py` cria casos **ficticios** nos dois dominios da
+demo e um operador ficticio ativo (`Atendente Demo 1`, telefone da faixa
+ficticia `+55 11 90000-0001`). Ele mora fora de `migrations/` de proposito:
+nunca roda num deploy.
+
+```bash
+# Banco descartavel: docker compose -f docker-compose.test.yml up -d
+# (migrations aplicadas como na CI: --target 006, backfill, apply)
+APP_ENV=development \
+DATABASE_URL=postgresql://postgres:throwaway_test_password@127.0.0.1:55432/supportfaq_phase0 \
+IDENTITY_HASH_SECRET=<o mesmo valor do .env local do app> \
+python -m scripts.seed_demo_cases
+
+# Apagar somente o que o seed criou
+APP_ENV=development DATABASE_URL=... IDENTITY_HASH_SECRET=... \
+python -m scripts.seed_demo_cases --reset
+```
+
+- **Guardas**: recusa (saida `2`) sem `APP_ENV` explicito em `development` ou
+  `test`, e com host de banco que nao seja `localhost`, `127.0.0.1`, `::1`,
+  `postgres` ou `postgres_test`. A URL nunca e ecoada.
+- **O que cria**: 13 casos — `concessoes-manutencao` com `urgent`, `high`,
+  `normal` e `low`; `lgpd-titular` com `urgent`, `high` e `normal` (o dominio
+  nao declara regra `low`). Cada dominio tem pelo menos um caso vermelho,
+  amarelo, verde e pausado (`waiting_customer`). Resumos citam ativos do
+  inventario demo (`REL-`, `ABR-`, `PNL-`) e levam a marca `[demo]`.
+- **Mesmo caminho do app**: motivo por `HandoffService.inspect_question`,
+  prioridade por `resolve_case_priority`, caso por
+  `OperationalRepository.record_chat` (o INSERT de producao), dono e pausa
+  por `SupportCaseTransitionService`. So `opened_at` e ancorado direto no
+  relogio do banco (`now() - intervalo`), para a cor ficar estavel no momento
+  do seed; casos pausados congelam a cor de verdade. No fim o script confere
+  cada cor com `compute_sla` e falha se algo divergir (ex.: `domain.yaml`
+  mudou a prioridade de uma regra).
+- **Idempotente**: tudo leva `channel='demo-seed'` e `request_id` com prefixo
+  `demo-seed-`. Rodar de novo substitui os casos marcados pelos mesmos 13, com
+  o relogio re-ancorado; nunca duplica. Os `handoff.requested` que o
+  `record_chat` enfileira sao removidos na hora: nada sai para webhook ou
+  WhatsApp.
+- **`--reset`**: apaga eventos, casos, auditorias e outbox marcados; o
+  operador ficticio e apagado (ou desativado, se ja agiu em caso fora do
+  seed). Sem `IDENTITY_HASH_SECRET` o operador fica.
+- **Login no console**: com `ENABLE_SUPPORT_CONSOLE=true` e
+  `WEB_AUTH_OTP_DELIVERY_TRANSPORT=memory`, o OTP do `+5511900000001` fica no
+  adapter em memoria (nao sai mensagem). Prova automatizada:
+  `tests/integration/test_demo_seed_console_postgres.py`.
+
 ## Smoke pela UI (`/team`, quando existir)
 
 A tela `/team` ainda nao existe nesta copia. Quando for construida,

@@ -21,6 +21,7 @@ from app.domain_engine.loader import DomainLoader
 from app.conversations.service import ConversationHistoryService
 from app.conversations.summary import SummaryRecallService
 from app.feedback.service import FeedbackService
+from app.orchestration.channel_routing import build_domain_router, route_channel_turn
 from app.orchestration.chat_flow import ChatFlowService
 from app.core.errors import DatabaseUnavailableError
 from app.db.operational import (
@@ -46,7 +47,42 @@ def create_web_chat(
     settings = get_settings()
     session_id, should_set_cookie = get_or_create_public_session_id(request, settings)
     identity_context = _resolve_identity_context(request, settings, session_id)
-    domain = _load_default_domain(settings)
+    domain_loader = DomainLoader(settings.domains_path)
+    routing_session_id = _routing_session_id(session_id, settings)
+    turn = route_channel_turn(
+        router=build_domain_router(
+            settings,
+            domain_loader,
+            enabled=settings.enable_web_domain_router,
+        ),
+        store=getattr(request.app.state, "session_domain_store", None),
+        last_out_store=getattr(request.app.state, "session_last_out_store", None),
+        default_domain=settings.default_domain,
+        text=payload.message,
+        session_id=routing_session_id,
+    )
+    if turn.routing_text is not None:
+        log_event(
+            logger,
+            "web_chat_routing",
+            request_id=request_id,
+            session_id_hash=hash_sensitive_value(
+                session_id,
+                secret=settings.persistence_hash_secret,
+            ),
+            routing_status=turn.routing_status,
+            domain=turn.domain,
+            channel="web",
+        )
+        if should_set_cookie:
+            set_public_session_cookie(response, settings, session_id)
+        return WebChatResponse(
+            request_id=request_id,
+            answer=turn.routing_text,
+            escalated=False,
+            support_code=request_id,
+        )
+    domain = _load_domain(domain_loader, turn.domain, settings.default_domain)
 
     database_runtime = request.app.state.database_runtime
     session_state_store = (
@@ -174,11 +210,19 @@ def create_web_feedback(
     return feedback_response
 
 
-def _load_default_domain(settings):
-    domain = DomainLoader(settings.domains_path).load(settings.default_domain)
+def _load_domain(domain_loader: DomainLoader, name: str | None, default_domain: str):
+    domain = (domain_loader.load(name) if name else None) or domain_loader.load(
+        default_domain
+    )
     if domain is None:
         raise HTTPException(status_code=404, detail="Domain not found")
     return domain
+
+
+def _routing_session_id(session_id: str, settings) -> str:
+    # Sticky/last-outbound stores are keyed by a digest, never the raw cookie.
+    digest = hash_sensitive_value(session_id, secret=settings.persistence_hash_secret)
+    return f"web:{digest or 'unknown'}"
 
 
 def _resolve_identity_context(request: Request, settings, session_id: str):
