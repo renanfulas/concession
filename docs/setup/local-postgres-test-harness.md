@@ -11,6 +11,10 @@ Testes cobertos (gated por `PHASE0_TEST_DATABASE_URL`):
 - `tests/integration/test_phase0_postgres.py`
 - `tests/integration/test_feedback_privacy_integrity_postgres.py`
 - `tests/integration/test_conversation_migration_upgrade.py`
+- `tests/integration/test_support_console_postgres.py`
+- `tests/integration/test_support_transitions_postgres.py`
+- `tests/integration/test_demo_seed_console_postgres.py` (seed de
+  demonstracao + `GET /web/support/cases`)
 
 Este runbook nao altera o mecanismo de skip. Ele apenas fornece um banco
 descartavel e as variaveis de ambiente esperadas para que os testes rodem.

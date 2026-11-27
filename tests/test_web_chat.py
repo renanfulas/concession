@@ -5,12 +5,17 @@ from app.api.schemas.feedback import FeedbackResponse
 from app.core.config import get_settings
 from app.core.request_context import REQUEST_ID_HEADER
 from app.main import CHAT_STATIC_DIR, create_app
+from app.orchestration.chat_flow import ChatFlowService
+from app.orchestration.domain_router import CLARIFICATION_TEXT, GREETING_TEXT
 
 
 @pytest.fixture
 def web_client(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("APP_ENV", "development")
     monkeypatch.setenv("ENABLE_PUBLIC_CHAT_UI", "true")
+    # These tests cover the unrouted public contract (one domain answers every
+    # message); routing by message has its own tests below.
+    monkeypatch.setenv("ENABLE_WEB_DOMAIN_ROUTER", "false")
     get_settings.cache_clear()
     client = TestClient(create_app())
     try:
@@ -296,6 +301,144 @@ def test_chat_route_remains_protected_without_api_key(web_client: TestClient) ->
     assert response.status_code == 403
     assert response.headers[REQUEST_ID_HEADER] == "web-chat-does-not-open-chat"
     assert response.json()["detail"] == "Invalid API key"
+
+
+@pytest.fixture
+def routed_web_client(monkeypatch: pytest.MonkeyPatch):
+    """Web chat with routing on, as the demo runs out of the box."""
+    monkeypatch.setenv("APP_ENV", "development")
+    monkeypatch.setenv("ENABLE_PUBLIC_CHAT_UI", "true")
+    monkeypatch.setenv("ENABLE_WEB_DOMAIN_ROUTER", "true")
+    monkeypatch.setenv("WHATSAPP_ROUTER_DOMAINS", "concessoes-manutencao,lgpd-titular")
+    monkeypatch.setenv("DEFAULT_DOMAIN", "concessoes-manutencao")
+    get_settings.cache_clear()
+    answered: list[str] = []
+    real_answer = ChatFlowService.answer
+
+    def recording_answer(self, domain, *args, **kwargs):
+        answered.append(domain.name)
+        return real_answer(self, domain, *args, **kwargs)
+
+    monkeypatch.setattr(
+        "app.orchestration.chat_flow.ChatFlowService.answer",
+        recording_answer,
+    )
+    client = TestClient(create_app())
+    client.answered_domains = answered  # type: ignore[attr-defined]
+    try:
+        yield client
+    finally:
+        get_settings.cache_clear()
+
+
+def test_web_chat_routes_privacy_request_to_lgpd_domain(
+    routed_web_client: TestClient,
+) -> None:
+    response = routed_web_client.post("/web/chat", json={"message": "Quero excluir meus dados"})
+
+    assert response.status_code == 200
+    assert routed_web_client.answered_domains == ["lgpd-titular"]
+    payload = response.json()
+    assert "pedido_titular" in payload["handoff_reasons"]
+    assert payload["references"]
+    assert all("lgpd-titular" in ref for ref in payload["references"])
+    assert "domain" not in payload
+
+
+def test_web_chat_routes_exposed_wire_to_maintenance_with_safety_risk(
+    routed_web_client: TestClient,
+) -> None:
+    response = routed_web_client.post("/web/chat", json={"message": "Tem fio exposto no abrigo"})
+
+    assert response.status_code == 200
+    assert routed_web_client.answered_domains == ["concessoes-manutencao"]
+    payload = response.json()
+    assert payload["escalated"] is True
+    assert "risco_seguranca" in payload["handoff_reasons"]
+    assert all("concessoes-manutencao" in ref for ref in payload["references"])
+
+
+def test_web_chat_follow_up_in_same_session_stays_in_routed_domain(
+    routed_web_client: TestClient,
+) -> None:
+    first = routed_web_client.post("/web/chat", json={"message": "Quero excluir meus dados"})
+    assert first.status_code == 200
+    # Same cookie (TestClient keeps it); the follow-up has no routing keyword.
+    follow_up = routed_web_client.post(
+        "/web/chat",
+        json={"message": "E quanto tempo voces levam para responder?"},
+    )
+
+    assert follow_up.status_code == 200
+    assert routed_web_client.answered_domains == ["lgpd-titular", "lgpd-titular"]
+
+
+def test_web_chat_session_without_choice_does_not_inherit_other_session_domain(
+    routed_web_client: TestClient,
+) -> None:
+    routed_web_client.post("/web/chat", json={"message": "Quero excluir meus dados"})
+    routed_web_client.cookies.clear()
+
+    response = routed_web_client.post(
+        "/web/chat",
+        json={"message": "E quanto tempo voces levam para responder?"},
+    )
+
+    assert response.status_code == 200
+    assert routed_web_client.answered_domains == ["lgpd-titular"]
+    assert response.json()["answer"] == GREETING_TEXT
+
+
+def test_web_chat_greeting_returns_router_menu_then_clarification(
+    routed_web_client: TestClient,
+) -> None:
+    first = routed_web_client.post(
+        "/web/chat",
+        headers={REQUEST_ID_HEADER: "web-chat-greeting-1"},
+        json={"message": "Oi"},
+    )
+    second = routed_web_client.post("/web/chat", json={"message": "bom dia"})
+
+    assert first.status_code == 200
+    assert routed_web_client.answered_domains == []
+    assert first.json() == {
+        "request_id": "web-chat-greeting-1",
+        "answer": GREETING_TEXT,
+        "escalated": False,
+        "handoff_reasons": [],
+        "references": [],
+        "support_code": "web-chat-greeting-1",
+        "error_code": None,
+        "support_deep_link": None,
+    }
+    assert second.json()["answer"] == CLARIFICATION_TEXT
+
+
+def test_web_chat_bare_menu_number_returns_domain_welcome_and_binds_session(
+    routed_web_client: TestClient,
+) -> None:
+    chosen = routed_web_client.post("/web/chat", json={"message": "2"})
+    follow_up = routed_web_client.post(
+        "/web/chat",
+        json={"message": "E quanto tempo voces levam para responder?"},
+    )
+
+    assert chosen.status_code == 200
+    assert chosen.json()["answer"].startswith("Este e o canal de privacidade")
+    assert routed_web_client.answered_domains == ["lgpd-titular"]
+    assert follow_up.status_code == 200
+
+
+def test_web_chat_address_number_is_not_a_menu_choice(
+    routed_web_client: TestClient,
+) -> None:
+    response = routed_web_client.post(
+        "/web/chat",
+        json={"message": "O relogio da Rua 2 esta apagado"},
+    )
+
+    assert response.status_code == 200
+    assert routed_web_client.answered_domains == ["concessoes-manutencao"]
 
 
 def test_public_chat_assets_do_not_contain_secret_strings() -> None:
