@@ -1008,8 +1008,11 @@ Autenticacao (OTP WhatsApp dedicado, staff nao e cliente):
   padrao 25), `offset`;
 - `active`: SQL so filtra e limita (`SUPPORT_CONSOLE_ACTIVE_CASES_CAP`, com
   `truncated: true` na resposta quando atingido); SLA, ordenacao "attention"
-  (estourado-e-nao-pausado primeiro, depois peso de prioridade, depois mais
-  antigo), filtro por cor e paginacao acontecem em Python sobre o relogio do
+  (`app.support.sla.sort_by_attention`: semaforo ativo vermelho, amarelo,
+  verde e pausados por ultimo; depois `deadline_at` crescente, isto e, menor
+  tempo restante, comparavel entre prazos de dominios diferentes; depois peso
+  de prioridade, mais antigo e `case_id`), filtro por cor e paginacao
+  acontecem em Python sobre o relogio do
   banco (`now()` na mesma query — um relogio so);
 - `history`: fechados/cancelados, paginacao SQL por `opened_at DESC`, sem SLA;
 - resposta = resumo do inbox + blocos novos por caso:

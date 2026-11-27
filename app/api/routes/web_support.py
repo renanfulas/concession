@@ -68,10 +68,10 @@ from app.support.sla import (
     COLOR_FILTERS,
     DomainSla,
     SlaAssessment,
-    attention_sort_key,
     compute_sla,
     domain_sla_overrides,
     matches_color_filter,
+    sort_by_attention,
 )
 from app.support.staff_auth import (
     StaffConsoleAuthService,
@@ -398,13 +398,7 @@ def list_console_cases(
                     item for item in assessed if matches_color_filter(item[1], color)
                 ]
             if sort == "attention":
-                assessed.sort(
-                    key=lambda item: attention_sort_key(
-                        priority=item[0].priority,
-                        opened_at=item[0].opened_at,
-                        sla=item[1],
-                    ),
-                )
+                assessed = sort_by_attention(assessed)
             page = assessed[offset : offset + limit]
             cases = [
                 ConsoleCaseSummaryResponse(
