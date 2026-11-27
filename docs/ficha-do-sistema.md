@@ -59,7 +59,7 @@ Nao faz:
 | `wa_id` (telefone E.164) por caso | `case_whatsapp_bindings` (migration 016, `app/support/wa_binding.py`) | cifrado de forma **reversivel** (Fernet, chave `SUPPORT_WA_ENC_KEY`) mais HMAC para busca; apagado quando o caso fecha ou e cancelado, ou apos `SUPPORT_WA_BINDING_MAX_DAYS` (padrao 15 dias) | legitimo interesse (art. 7, IX) ou execucao de politica publica (art. 7, III); a confirmar |
 | Telefone de destino (cidadao e membros do time) | campo `to` do `operational_outbox.payload_sanitized` (`app/support/whatsapp_bridge.py:243-252`; `app/db/operational.py:556-558`) | gravado **em claro**, apesar do nome da coluna, para o dispatcher entregar a mensagem; nao ha rotina de purga do outbox no codigo | idem (cidadao); legitimo interesse (art. 7, IX) para o telefone do time |
 | Telefone E.164 do operador do time | cookie HttpOnly de lembrete `<token>.<E.164>` no navegador do operador (`app/support/staff_auth.py:14-19`, `:118`) | o banco guarda so o HMAC do token; o telefone fica em claro no cookie do proprio operador | legitimo interesse (art. 7, IX): gestao de acesso do time |
-| Endereco IP do cliente | log `rate_limit_exceeded` (`app/main.py:127`, `:162`) | registrado **em claro** no campo `client_host` | legitimo interesse (art. 7, IX): seguranca do canal; a confirmar |
+| Endereco IP do cliente | log `rate_limit_exceeded` (`app/main.py`, middleware de `/chat` e `/web/chat`) | so o HMAC SHA-256 truncado (`client_host_hash`, chave `PERSISTENCE_HASH_SECRET`); o IP em claro nao vai para o log | legitimo interesse (art. 7, IX): seguranca do canal; a confirmar |
 | Codigo do ativo e endereco | ticket de manutencao | dado operacional, nao pessoal | — |
 
 Dados sensiveis (art. 11): nao sao coletados. Dados de criancas: nao sao coletados de proposito.
@@ -103,7 +103,6 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 
 ## Limites conhecidos
 
-- O log `rate_limit_exceeded` registra o IP do cliente em claro (`app/main.py:127`, `:162`).
 - O campo `to` do `operational_outbox.payload_sanitized` guarda o telefone em claro, e nao ha purga do outbox no codigo.
 - O cookie de lembrete do operador carrega o telefone E.164 em claro.
 - O `basis` do SLA do dominio `lgpd-titular` cita o art. 19, II para todo `pedido_titular`, inclusive exclusao e correcao, cujo prazo segue regulamento (art. 18, §5º); os 15 dias sao meta interna nesses casos.

@@ -26,6 +26,7 @@ from app.api.routes import (
 )
 from app.core.config import DEV_ENVS, get_settings
 from app.core.logging import configure_logging, log_event
+from app.core.privacy import hash_sensitive_value
 from app.core.rate_limit import InMemoryRateLimiter, RateLimitExceeded
 from app.core.request_context import (
     REQUEST_ID_HEADER,
@@ -145,7 +146,7 @@ def create_app() -> FastAPI:
                     method=request.method,
                     path=request.url.path,
                     status_code=429,
-                    client_host=client_host,
+                    client_host_hash=hash_sensitive_value(client_host),
                     retry_after=exc.retry_after_seconds,
                 )
                 return JSONResponse(
@@ -180,7 +181,7 @@ def create_app() -> FastAPI:
                     method=request.method,
                     path=request.url.path,
                     status_code=429,
-                    client_host=client_host,
+                    client_host_hash=hash_sensitive_value(client_host),
                     retry_after=exc.retry_after_seconds,
                 )
                 return JSONResponse(
