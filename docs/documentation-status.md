@@ -26,6 +26,11 @@
   nucleo.
 - Migrations `001-019` sem mudanca de schema nesta copia; a coluna `priority`
   de `support_cases` ja existia e agora recebe o valor do turno.
+- Seed de demonstracao do console: `scripts/seed_demo_cases.py` (somente
+  `APP_ENV` development/test e banco local, fora de `migrations/`), descrito
+  em `docs/runbooks/support-console-smoke.md`. O job `postgres` de
+  `.github/workflows/phase0-gates.yml` agora roda tambem os testes de
+  integracao do console (leitura/metricas, transicoes e seed).
 - Planos historicos, runbooks de staging e relatorios do repositorio de origem
   nao foram copiados (ver `docs/archive/README.md`).
 
