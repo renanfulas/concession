@@ -124,6 +124,30 @@ Para cada rodada de decisao ou revalidacao, registrar:
 - recomendacao: manter pgvector no staging, acionar rollback lexical, melhorar
   conteudo ou ajustar handoff/confidence
 
+## Ensaio da reingestao nesta copia (2026-11-27)
+
+Esta copia nao tem pgvector persistente (o deploy em VPS esta fora do plano).
+O procedimento de "Reingestao apos a fonte relativa" foi ensaiado de ponta a
+ponta num PostgreSQL descartavel (`docker-compose.test.yml`, imagem
+`pgvector/pgvector:pg16`), com estado legado real:
+
+| Passo | Resultado |
+| --- | --- |
+| Ingestao com o codigo anterior ao PR #4 (`5d7ce41`), `DOMAINS_PATH` absoluto | 17 artigos ativos com caminho absoluto (`D:\...\knowledge\...`): 9 de `concessoes-manutencao`, 8 de `lgpd-titular` |
+| Reingestao com a `main` (`ccea2f7`), `scripts/ingest_domain_pgvector.py` | 17 artigos novos com `domains/<dominio>/knowledge/...`; os legados continuam ativos (duplicacao esperada) |
+| SQL de desativacao acima | `UPDATE 9` e `UPDATE 8`; ficam ativos so os 17 relativos, com 29 trechos; nada apagado |
+| Evals deterministicos com `RETRIEVAL_BACKEND=pgvector` | `concessoes-manutencao` 13/13, `lgpd-titular` 13/13 |
+| Higiene das `references` nas respostas | 109 referencias, todas `domains/...`, nenhum caso com repeticao |
+
+Comparacao de retrieval na mesma base, pergunta "Tem fio exposto soltando
+faisca no abrigo ABR-1104": o pgvector traz `faqs/risco-seguranca.md` em
+primeiro (0,498, contra 0,459 do segundo); o lexical da `ccea2f7` empatava
+tres trechos em 0,625, um deles `faqs/pichacao-limpeza.md`. Desde o PR #25 o
+lexical tambem traz `faqs/risco-seguranca.md` primeiro, com os mesmos scores
+e so a ordem nova. Embeddings:
+`text-embedding-3-small`. Repetir este roteiro no primeiro ambiente com
+pgvector persistente, depois do deploy.
+
 ## Fronteiras de ownership
 
 - Renan coordena criterios, evals, contratos, schema, migrations, indices,
