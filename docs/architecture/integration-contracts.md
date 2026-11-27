@@ -238,7 +238,7 @@ Saida atual:
   "answer": "resposta ao usuario",
   "escalated": false,
   "handoff_reasons": [],
-  "references": ["qrcode-whatsapp.md"],
+  "references": ["domains/suporte-vps-whatsapp/knowledge/faqs/qrcode-whatsapp.md"],
   "support_code": "uuid",
   "error_code": null
 }
@@ -425,7 +425,7 @@ Saida minima:
   "confidence": 0.82,
   "escalated": false,
   "handoff_reasons": [],
-  "references": ["knowledge/faqs/qrcode-whatsapp.md"],
+  "references": ["domains/suporte-vps-whatsapp/knowledge/faqs/qrcode-whatsapp.md"],
   "error_code": null,
   "handoff_status": "handoff_not_required",
   "persistence_status": "persisted"
@@ -474,7 +474,18 @@ remocao do n8n; consulte apenas como referencia legada.
 Contrato atual de `references`:
 
 - hoje a API retorna uma lista de fontes rastreaveis do retrieval atual
-- no estado atual do MVP, essas fontes costumam ser caminhos de arquivo em `domains/.../knowledge/...`
+- para conhecimento local, cada fonte e um identificador estavel, relativo e
+  POSIX: `domains/<dominio>/<caminho dentro do dominio>`, por exemplo
+  `domains/concessoes-manutencao/knowledge/articles/anexo-niveis-de-servico.md`.
+  E o mesmo em qualquer maquina; nunca contem caminho absoluto do servidor,
+  letra de drive nem barra invertida (`app/ingestion/service.py`,
+  `knowledge_source_id`)
+- a lista e deduplicada preservando a ordem do retrieval: varios trechos do
+  mesmo arquivo viram uma unica referencia (`app/orchestration/references.py`)
+- fontes legadas gravadas com caminho absoluto (pgvector/Chroma ingeridos antes
+  desta regra) sao reescritas na saida para `domains/<dominio>/...` ou, sem
+  esse marcador, so o nome do arquivo; URLs (loader GitHub) e ids como `kb:...`
+  passam sem mudanca
 - com `RETRIEVAL_BACKEND=pgvector`, essas fontes continuam serializadas como
   caminhos rastreaveis de conhecimento versionado, preservando o contrato
   publico mesmo quando a busca vem do PostgreSQL
@@ -1028,8 +1039,11 @@ Autenticacao (OTP WhatsApp dedicado, staff nao e cliente):
   padrao 25), `offset`;
 - `active`: SQL so filtra e limita (`SUPPORT_CONSOLE_ACTIVE_CASES_CAP`, com
   `truncated: true` na resposta quando atingido); SLA, ordenacao "attention"
-  (estourado-e-nao-pausado primeiro, depois peso de prioridade, depois mais
-  antigo), filtro por cor e paginacao acontecem em Python sobre o relogio do
+  (`app.support.sla.sort_by_attention`: semaforo ativo vermelho, amarelo,
+  verde e pausados por ultimo; depois `deadline_at` crescente, isto e, menor
+  tempo restante, comparavel entre prazos de dominios diferentes; depois peso
+  de prioridade, mais antigo e `case_id`), filtro por cor e paginacao
+  acontecem em Python sobre o relogio do
   banco (`now()` na mesma query — um relogio so);
 - `history`: fechados/cancelados, paginacao SQL por `opened_at DESC`, sem SLA;
 - resposta = resumo do inbox + blocos novos por caso:

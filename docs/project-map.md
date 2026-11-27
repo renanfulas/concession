@@ -25,16 +25,18 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | --- | --- | --- | --- | --- |
 | Dominio `concessoes-manutencao` | ✅ | 14 ativos ficticios, anexo de SLA ficticio (itens 3.1-3.6), 5 regras de escalonamento com prioridade, prompts | trocar prazos e inventario pelos do contrato real | evals base 10/10, confinamento 17/17, `tests/test_concessoes_domain.py` |
 | Dominio `lgpd-titular` | ✅ | aviso de privacidade ficticio, direitos (art. 18), prazos (art. 19, II), 4 regras com prioridade | revisao do texto pelo encarregado real | evals base 10/10, confinamento 16/16 |
-| SLA por dominio (`sla:` no `domain.yaml`) | ✅ | override por prioridade, `basis` na resposta do console, lista, detalhe e metricas | — | `tests/test_support_sla.py`, `tests/test_web_support_console.py` |
+| SLA por dominio (`sla:` no `domain.yaml`) | ✅ | override por prioridade, `basis` na resposta do console, lista, detalhe e metricas; fila `attention` ordenada pela pressao do prazo de cada caso (semaforo, depois `deadline_at`, pausados no fim) | — | `tests/test_support_sla.py`, `tests/test_web_support_console.py` |
 | Prioridade do caso por regra | ✅ codigo · 🟡 banco | `escalation_rules[].priority`, `resolve_case_priority`, coluna `priority` no INSERT | rodar a suite de integracao PostgreSQL (`docker-compose.test.yml`) para provar o INSERT | `tests/test_concessoes_domain.py`; integracao nao rodada nesta copia |
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu; numero so escolhe opcao quando e a mensagem inteira ("2", "opcao 2"), nunca "Rua 2" | nome da opcao ("manutencao", "privacidade") dentro de frase ainda conta como escolha e devolve so o welcome | `tests/test_domain_router.py` |
 | Entradas da demo sem `.env` | ✅ | `DEFAULT_DOMAIN` padrao e `concessoes-manutencao` (fonte unica em `Settings`, lida pelo health); `/web/chat` usa o mesmo roteador e memoria pegajosa do WhatsApp (`ENABLE_WEB_DOMAIN_ROUTER=true` por padrao) | — | `tests/test_web_chat.py`, `tests/test_health_readiness.py` |
+| `references` sem caminho do servidor | ✅ codigo · 🟡 banco | fonte estavel `domains/<dominio>/knowledge/...` na ingestao; resposta deduplicada e com caminhos legados reescritos (`app/orchestration/references.py`) | reingerir pgvector e desativar artigos legados (`docs/runbooks/pgvector-promotion-checklist.md`) | `tests/test_reference_paths.py` |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
+| Resumo em ingles no README | ✅ | secao `English summary` no fim do `README.md`, com link no topo | atualizar junto quando o status em PT mudar | `tests/test_docs_links.py`, revisao humana |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
 | Relatorio mensal para a fiscalizacao | ⬜ | metricas do console | exportacao por categoria e prazo | — |
-| Detector de CPF com digito verificador | ⬜ | mascaramento de cartao, CNPJ, e-mail, telefone, IP | CPF explicito (hoje provavelmente cai na regra de telefone) | — |
+| Detector de CPF com digito verificador | ✅ | `[REDACTED_CPF]` (mascara sempre; 11 digitos so com digito verificador), datas ISO e protocolos rotulados preservados, `REDACTION_VERSION` `phase0-v2` com leitura de `phase0-v1` | protocolo sem rotulo continua mascarado (limite aceito) | `tests/test_pii_cpf.py`, `tests/test_pii_card.py` |
 
 ## Herdado do nucleo (sem mudanca nesta copia)
 
