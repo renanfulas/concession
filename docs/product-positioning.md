@@ -20,14 +20,14 @@ canais e conseguir provar o que foi feito.
 ## Dores Que Resolve
 
 - prazo de contrato perdido porque o defeito chegou por um canal informal
-- pedido de titular respondido fora dos 15 dias da LGPD
+- pedido de titular respondido fora do prazo da LGPD
 - resposta diferente para a mesma pergunta em canais diferentes
 - falta de prova de quando o pedido chegou, qual prazo valia e quem tratou
 - bot que inventa resposta ou promete o que o contrato nao garante
 
 ## Promessas Do Produto
 
-- responder com base em conhecimento versionado e citar a fonte
+- responder com base em conhecimento versionado e devolver as fontes recuperadas
 - classificar o pedido por regra declarada no dominio, testada por eval
 - aplicar o prazo do dominio (contrato ou lei) no semaforo do console
 - expor `request_id`, `references`, `confidence`, `handoff_reasons` e `error_code`

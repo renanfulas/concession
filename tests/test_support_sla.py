@@ -9,6 +9,7 @@ from app.support.sla import (
     attention_sort_key,
     compute_sla,
     matches_color_filter,
+    sort_by_attention,
 )
 
 
@@ -119,11 +120,12 @@ def test_waiting_seconds_extends_deadline_and_discounts_elapsed() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Attention ordering: overdue-active first, then priority, then oldest
+# Attention ordering: semaforo (vermelho > amarelo > verde > pausado), depois
+# prazo mais proximo, depois prioridade, mais antigo e case_id
 # --------------------------------------------------------------------------- #
 
 
-def test_attention_order_is_deterministic() -> None:
+def test_attention_order_by_severity_then_deadline() -> None:
     now = OPENED + timedelta(hours=3)
 
     def entry(case_id: str, priority: str, opened_delta_minutes: int, status: str = "open"):
@@ -145,12 +147,92 @@ def test_attention_order_is_deterministic() -> None:
     )
 
     assert [item[0] for item in ordered] == [
-        "urgent-overdue",
-        "high-overdue",
-        "urgent-paused-overdue",  # pausado nao fura a fila de estourados
-        "high-fresh",
-        "normal-old",
+        "urgent-overdue",  # estourou primeiro (prazo 13:10)
+        "high-overdue",  # estourou depois (prazo 14:30)
+        "high-fresh",  # verde, prazo 16:50
+        "normal-old",  # verde, prazo 20:00
+        "urgent-paused-overdue",  # pausado vai para o fim: aguarda o cliente
     ]
+
+
+def _case(case_id: str, priority: str, opened_at: datetime):
+    return SimpleNamespace(case_id=case_id, priority=priority, opened_at=opened_at)
+
+
+def test_cross_domain_queue_follows_deadline_pressure_not_age() -> None:
+    from app.support.sla import DomainSla
+
+    now = OPENED + timedelta(days=10)
+    maintenance = DomainSla(minutes_by_priority={"normal": 48 * 60}, basis="Contrato demo")
+    lgpd = DomainSla(minutes_by_priority={"normal": 15 * 24 * 60}, basis="LGPD art. 19, II")
+
+    lgpd_opened = now - timedelta(days=3)
+    maintenance_opened = now - timedelta(hours=47)
+    lgpd_case = _case("lgpd-normal", "normal", lgpd_opened)
+    maintenance_case = _case("manutencao-normal", "normal", maintenance_opened)
+    lgpd_sla = compute_sla("normal", lgpd_opened, "open", now, SETTINGS, domain_sla=lgpd)
+    maintenance_sla = compute_sla(
+        "normal", maintenance_opened, "open", now, SETTINGS, domain_sla=maintenance
+    )
+
+    # Antes: mesma prioridade, o LGPD (mais antigo) vinha primeiro.
+    assert lgpd_sla.color == "green" and lgpd_sla.elapsed_ratio == 0.2
+    assert maintenance_sla.color == "yellow" and maintenance_sla.elapsed_ratio > 0.97
+    assert "prazo em 1h" in maintenance_sla.explanation
+
+    ordered = sort_by_attention([(lgpd_case, lgpd_sla), (maintenance_case, maintenance_sla)])
+
+    assert [case.case_id for case, _ in ordered] == ["manutencao-normal", "lgpd-normal"]
+
+
+def test_breached_low_priority_beats_high_priority_green() -> None:
+    now = OPENED + timedelta(hours=30)
+    low_opened = OPENED  # 30h > 24h do SLA low: estourado
+    urgent_opened = now - timedelta(minutes=5)  # 5 de 60 min: verde
+    low = (_case("low-breached", "low", low_opened), compute_sla("low", low_opened, "open", now, SETTINGS))
+    urgent = (
+        _case("urgent-green", "urgent", urgent_opened),
+        compute_sla("urgent", urgent_opened, "open", now, SETTINGS),
+    )
+    assert low[1].color == "red"
+    assert urgent[1].color == "green"
+
+    ordered = sort_by_attention([urgent, low])
+
+    assert [case.case_id for case, _ in ordered] == ["low-breached", "urgent-green"]
+
+
+def test_attention_order_is_deterministic_on_full_ties() -> None:
+    now = OPENED + timedelta(hours=1)
+    entries = [
+        (_case(case_id, "normal", OPENED), compute_sla("normal", OPENED, "open", now, SETTINGS))
+        for case_id in ("case-c", "case-a", "case-b")
+    ]
+
+    forward = sort_by_attention(entries)
+    backward = sort_by_attention(list(reversed(entries)))
+
+    assert [case.case_id for case, _ in forward] == ["case-a", "case-b", "case-c"]
+    assert [case.case_id for case, _ in backward] == ["case-a", "case-b", "case-c"]
+    # Puro: a entrada nao foi reordenada.
+    assert [case.case_id for case, _ in entries] == ["case-c", "case-a", "case-b"]
+
+
+def test_equal_deadline_falls_back_to_priority_weight() -> None:
+    now = OPENED + timedelta(minutes=65)
+    # high aberto em OPENED (prazo +120) e urgent aberto 60 min depois (prazo +120):
+    # mesmo prazo, ambos verdes; a prioridade desempata.
+    urgent_opened = OPENED + timedelta(minutes=60)
+    high = (_case("high", "high", OPENED), compute_sla("high", OPENED, "open", now, SETTINGS))
+    urgent = (
+        _case("urgent", "urgent", urgent_opened),
+        compute_sla("urgent", urgent_opened, "open", now, SETTINGS),
+    )
+    assert high[1].deadline_at == urgent[1].deadline_at
+
+    ordered = sort_by_attention([high, urgent])
+
+    assert [case.case_id for case, _ in ordered] == ["urgent", "high"]
 
 
 # --------------------------------------------------------------------------- #

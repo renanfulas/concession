@@ -238,7 +238,7 @@ Saida atual:
   "answer": "resposta ao usuario",
   "escalated": false,
   "handoff_reasons": [],
-  "references": ["qrcode-whatsapp.md"],
+  "references": ["domains/suporte-vps-whatsapp/knowledge/faqs/qrcode-whatsapp.md"],
   "support_code": "uuid",
   "error_code": null
 }
@@ -251,6 +251,26 @@ Regras operacionais:
 - `support_code` replica `request_id` como codigo de suporte amigavel para UI
 - `confidence` e `domain` continuam internos ao backend e nao fazem parte do contrato publico V0
 - se `escalated=true`, a UI deve tratar isso como sinal de revisao humana ou necessidade de continuidade operacional, nao como falha silenciosa
+
+Escolha do dominio (mesmo roteador do WhatsApp):
+
+- `ENABLE_WEB_DOMAIN_ROUTER=true` (padrao): a mensagem passa pelo
+  `DomainRouter` com os dominios de `WHATSAPP_ROUTER_DOMAINS`, com a mesma
+  memoria pegajosa por sessao (`SessionDomainStore`, chave
+  `web:<hash do cookie>`, nunca o cookie bruto). Ex.: "Quero excluir meus
+  dados" -> `lgpd-titular`; "Tem fio exposto no abrigo" ->
+  `concessoes-manutencao`; o proximo turno sem palavra-chave fica no dominio
+  escolhido.
+- turno sem dominio (saudacao, empate, `menu`): responde a saudacao
+  institucional e depois a pergunta de esclarecimento, sem chamar o motor de
+  resposta e sem gravar auditoria; `escalated=false`, `references=[]`,
+  `request_id`/`support_code` presentes. Log `web_chat_routing` com
+  `routing_status=routing_menu`.
+- escolha so por numero ("2", "opcao 2"): responde o `welcome_message` do
+  dominio e vincula a sessao (`routing_status=routing_selected`).
+- `ENABLE_WEB_DOMAIN_ROUTER=false`: todo turno e respondido por
+  `DEFAULT_DOMAIN` (comportamento anterior). O formato da resposta nao muda
+  em nenhum dos modos.
 
 Fronteira de responsabilidade:
 
@@ -405,7 +425,7 @@ Saida minima:
   "confidence": 0.82,
   "escalated": false,
   "handoff_reasons": [],
-  "references": ["knowledge/faqs/qrcode-whatsapp.md"],
+  "references": ["domains/suporte-vps-whatsapp/knowledge/faqs/qrcode-whatsapp.md"],
   "error_code": null,
   "handoff_status": "handoff_not_required",
   "persistence_status": "persisted"
@@ -454,7 +474,18 @@ remocao do n8n; consulte apenas como referencia legada.
 Contrato atual de `references`:
 
 - hoje a API retorna uma lista de fontes rastreaveis do retrieval atual
-- no estado atual do MVP, essas fontes costumam ser caminhos de arquivo em `domains/.../knowledge/...`
+- para conhecimento local, cada fonte e um identificador estavel, relativo e
+  POSIX: `domains/<dominio>/<caminho dentro do dominio>`, por exemplo
+  `domains/concessoes-manutencao/knowledge/articles/anexo-niveis-de-servico.md`.
+  E o mesmo em qualquer maquina; nunca contem caminho absoluto do servidor,
+  letra de drive nem barra invertida (`app/ingestion/service.py`,
+  `knowledge_source_id`)
+- a lista e deduplicada preservando a ordem do retrieval: varios trechos do
+  mesmo arquivo viram uma unica referencia (`app/orchestration/references.py`)
+- fontes legadas gravadas com caminho absoluto (pgvector/Chroma ingeridos antes
+  desta regra) sao reescritas na saida para `domains/<dominio>/...` ou, sem
+  esse marcador, so o nome do arquivo; URLs (loader GitHub) e ids como `kb:...`
+  passam sem mudanca
 - com `RETRIEVAL_BACKEND=pgvector`, essas fontes continuam serializadas como
   caminhos rastreaveis de conhecimento versionado, preservando o contrato
   publico mesmo quando a busca vem do PostgreSQL
@@ -1008,8 +1039,11 @@ Autenticacao (OTP WhatsApp dedicado, staff nao e cliente):
   padrao 25), `offset`;
 - `active`: SQL so filtra e limita (`SUPPORT_CONSOLE_ACTIVE_CASES_CAP`, com
   `truncated: true` na resposta quando atingido); SLA, ordenacao "attention"
-  (estourado-e-nao-pausado primeiro, depois peso de prioridade, depois mais
-  antigo), filtro por cor e paginacao acontecem em Python sobre o relogio do
+  (`app.support.sla.sort_by_attention`: semaforo ativo vermelho, amarelo,
+  verde e pausados por ultimo; depois `deadline_at` crescente, isto e, menor
+  tempo restante, comparavel entre prazos de dominios diferentes; depois peso
+  de prioridade, mais antigo e `case_id`), filtro por cor e paginacao
+  acontecem em Python sobre o relogio do
   banco (`now()` na mesma query — um relogio so);
 - `history`: fechados/cancelados, paginacao SQL por `opened_at DESC`, sem SLA;
 - resposta = resumo do inbox + blocos novos por caso:
@@ -1722,7 +1756,13 @@ Contrato:
   `WHATSAPP_ROUTER_DOMAINS` com 2+ dominios validos, na ordem de selecao
   (`1`, `2`, ...).
 - selecao explicita por numero (`1`, `2`) ou pelo nome da opcao (`manutencao`,
-  `privacidade`) segue funcionando como atalho e escolhe o dominio.
+  `privacidade`) segue funcionando como atalho e escolhe o dominio. O numero so
+  conta quando e a mensagem inteira (espacos e pontuacao ignorados, com
+  `opcao`/`opção`/`option` opcional antes): "2", "opcao 2" e " 2. " escolhem;
+  "O relogio da Rua 2 esta apagado" nao escolhe e segue para palavra-chave.
+- o `/web/chat` usa o mesmo roteador e as mesmas regras, com chave propria
+  (`ENABLE_WEB_DOMAIN_ROUTER`, ligada por padrao); ver a secao
+  `POST /web/chat`.
 - sem selecao, a mensagem e pontuada contra `routing.keywords` de cada dominio
   (match por palavra inteira, acentos normalizados); o melhor unico vence.
 - saudacao, texto vazio, empate ou nenhum match -> o transporte NAO chama o

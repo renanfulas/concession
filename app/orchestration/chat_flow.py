@@ -4,13 +4,14 @@ import time
 from time import perf_counter
 
 from app.core.errors import ProviderError, RetrievalError
-from app.core.persistence_sanitize import contains_card_number
+from app.core.persistence_sanitize import contains_card_number, sanitize_for_persistence
 from app.core.text import fold
 from app.domain_engine.models import DomainConfig
 from app.handoff.service import HandoffService
 from app.llm.service import LLMService
 from app.orchestration.confidence import compute_confidence
 from app.orchestration.prompt_builder import build_prompt
+from app.orchestration.references import public_references
 from app.retrieval.service import RetrievalService
 from app.conversations.service import ConversationHistoryService, hash_session
 from app.conversations.session_state import SessionState, SessionStateStore
@@ -62,11 +63,31 @@ class ChatFlowService:
             channel=channel,
             customer_id=customer_id,
         )
+        if "answer" in result:
+            result["answer"] = self._with_rule_notices(
+                domain, result.get("handoff_reasons") or [], str(result["answer"] or "")
+            )
         # Hot-tier state write (non-authoritative, fail-open). No-op without a store.
         self._record_session_state(
             domain=domain, session_id=session_id, channel=channel, result=result
         )
         return result
+
+    @staticmethod
+    def _with_rule_notices(
+        domain: DomainConfig, reasons: list[str], answer: str
+    ) -> str:
+        """Prepend the ``notice`` of every matched escalation rule, once each."""
+        matched = set(reasons)
+        notices: list[str] = []
+        handoff = getattr(domain, "handoff", None)
+        for rule in getattr(handoff, "escalation_rules", None) or ():
+            notice = (rule.notice or "").strip()
+            if rule.reason in matched and notice and notice not in notices:
+                notices.append(notice)
+        if not notices:
+            return answer
+        return "\n\n".join([*notices, answer] if answer else notices)
 
     def _record_session_state(
         self,
@@ -177,12 +198,16 @@ class ChatFlowService:
             }
 
         pre_handoff_reasons = self.handoff_service.inspect_question(domain, question)
+        # Detection above needs the raw text (card, CPF, secrets). Everything that
+        # leaves the process -- embedding query and LLM prompt -- gets the masked
+        # text, so personal data typed by the citizen never reaches a provider.
+        provider_question = sanitize_for_persistence(question) or ""
 
         if self._should_block_automated_response(pre_handoff_reasons):
             if self._can_retrieve_references_for_blocked_response(pre_handoff_reasons):
                 try:
                     retrieval_started_at = perf_counter()
-                    chunks = self.retrieval_service.retrieve(domain, question)
+                    chunks = self.retrieval_service.retrieve(domain, provider_question)
                 except RetrievalError:
                     chunks = []
                 finally:
@@ -194,7 +219,9 @@ class ChatFlowService:
                 "confidence": 0.0,
                 "escalated": True,
                 "handoff_reasons": pre_handoff_reasons,
-                "references": [chunk.source for chunk in chunks],
+                "references": public_references(
+                    (chunk.source for chunk in chunks), domain.name
+                ),
                 "error_code": None,
                 "provider_failure_kind": None,
                 "observability": self._build_observability(
@@ -206,7 +233,7 @@ class ChatFlowService:
 
         try:
             retrieval_started_at = perf_counter()
-            chunks = self.retrieval_service.retrieve(domain, question)
+            chunks = self.retrieval_service.retrieve(domain, provider_question)
         except RetrievalError as exc:
             error_code = exc.error_code
         finally:
@@ -250,7 +277,9 @@ class ChatFlowService:
                 "confidence": confidence,
                 "escalated": True,
                 "handoff_reasons": handoff_reasons,
-                "references": [chunk.source for chunk in chunks],
+                "references": public_references(
+                    (chunk.source for chunk in chunks), domain.name
+                ),
                 "error_code": error_code,
                 "provider_failure_kind": provider_failure_kind,
             }
@@ -269,7 +298,7 @@ class ChatFlowService:
                     )
                 prompt = build_prompt(
                     domain=domain,
-                    question=question,
+                    question=provider_question,
                     chunks=chunks,
                     history=history,
                     customer_summary=self._recall_customer_summary(
@@ -300,7 +329,9 @@ class ChatFlowService:
             "confidence": confidence,
             "escalated": bool(handoff_reasons),
             "handoff_reasons": handoff_reasons,
-            "references": [chunk.source for chunk in chunks],
+            "references": public_references(
+                (chunk.source for chunk in chunks), domain.name
+            ),
             "error_code": error_code,
             "provider_failure_kind": provider_failure_kind,
             "observability": self._build_observability(

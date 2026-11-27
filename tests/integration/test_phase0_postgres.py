@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.core.persistence_sanitize import REDACTION_VERSION
 from app.db.runtime import DatabaseRuntime
 from app.db.operational import (
     ChatAuditInput,
@@ -440,7 +441,7 @@ def test_conversation_schema_removes_raw_session_and_persists_only_sanitized_mes
     assert "user@example.com" not in rendered
     assert "hunter2" not in rendered
     assert all(row[1] == "whatsapp" for row in rows)
-    assert all(row[3] == "phase0-v1" for row in rows)
+    assert all(row[3] == REDACTION_VERSION for row in rows)
 
 
 def test_persisted_turn_is_fanned_out_to_append_only_sink(

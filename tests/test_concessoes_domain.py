@@ -84,3 +84,57 @@ def test_rule_priority_rejects_unknown_values() -> None:
 
     with pytest.raises(ValidationError):
         DomainHandoffRuleConfig(reason="x", terms=["y"], priority="critical")
+
+
+@pytest.mark.parametrize(
+    ("question", "absent_reason"),
+    [
+        ("O banco do abrigo ABR-1290 esta solto, mas sem risco", "risco_seguranca"),
+        ("Não há risco, só o banco balançando", "risco_seguranca"),
+        ("Qual o risco de multa se o painel ficar apagado?", "risco_seguranca"),
+        ("O técnico está atrasado para consertar o relógio", "informacao_incorreta"),
+    ],
+)
+def test_ignore_terms_remove_false_positives(
+    domain: DomainConfig, question: str, absent_reason: str
+) -> None:
+    reasons = HandoffService().inspect_question(domain, question)
+    assert absent_reason not in reasons
+
+
+def test_ignore_terms_never_hide_another_term_of_the_same_rule(domain: DomainConfig) -> None:
+    reasons = HandoffService().inspect_question(domain, "Tem fio exposto no abrigo, sem risco?")
+    assert "risco_seguranca" in reasons
+    assert resolve_case_priority(domain, reasons) == "urgent"
+
+
+def test_clock_running_late_is_still_wrong_information(domain: DomainConfig) -> None:
+    reasons = HandoffService().inspect_question(domain, "O relógio REL-0101 está atrasado dez minutos")
+    assert "informacao_incorreta" in reasons
+
+
+def test_ignore_terms_are_scoped_to_their_rule(domain: DomainConfig) -> None:
+    rules = [
+        DomainHandoffRuleConfig(reason="a", terms=["risco"], ignore_terms=["sem risco"]),
+        DomainHandoffRuleConfig(reason="b", terms=["risco"]),
+    ]
+    scoped = domain.model_copy(
+        update={"handoff": domain.handoff.model_copy(update={"escalation_rules": rules})}
+    )
+    reasons = HandoffService().inspect_question(scoped, "esta sem risco")
+    assert "a" not in reasons
+    assert "b" in reasons
+
+
+def test_security_reason_is_not_downgraded_by_a_low_rule(domain: DomainConfig) -> None:
+    reasons = HandoffService().inspect_question(
+        domain, "Picharam o relógio e me pediram a senha por telefone"
+    )
+    assert "conservacao_limpeza" in reasons
+    assert "sensitive_topic" in reasons
+    assert resolve_case_priority(domain, reasons) == "normal"
+
+
+def test_plain_low_rule_keeps_low(domain: DomainConfig) -> None:
+    reasons = HandoffService().inspect_question(domain, "Picharam o relógio da Praça da Sé")
+    assert resolve_case_priority(domain, reasons) == "low"
