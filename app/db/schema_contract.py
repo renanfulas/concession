@@ -3,9 +3,37 @@
 from typing import Any
 
 
-CONTRACT_MIGRATION = "020_support_case_sla_policy_and_late_reason.sql"
+CONTRACT_MIGRATION = "021_ai_solution_intake.sql"
 
 REQUIRED_COLUMNS = {
+    "ai_solution_events": {
+        "id",
+        "solution_id",
+        "actor_staff_id",
+        "action",
+        "from_status",
+        "to_status",
+        "note_sanitized",
+        "created_at",
+    },
+    "ai_solutions": {
+        "id",
+        "reference",
+        "owner_name",
+        "data_categories",
+        "criticality",
+        "criticality_reasons",
+        "ripd_required",
+        "status",
+        "sla_minutes",
+        "sla_basis",
+        "submitted_by",
+        "reviewer_staff_id",
+        "submitted_at",
+        "decided_at",
+        "rejection_reason",
+        "ripd_reference",
+    },
     "case_whatsapp_bindings": {
         "id",
         "case_id",
@@ -141,6 +169,8 @@ REQUIRED_COLUMNS = {
 FORBIDDEN_COLUMNS = {"conversations": {"session_id", "legacy_session_seen_at"}}
 
 REQUIRED_INDEXES = {
+    "ai_solution_events_solution_idx",
+    "ai_solutions_status_idx",
     "idx_case_wa_bindings_open",
     "idx_case_wa_bindings_wa_id_hash",
     "idx_case_wa_bindings_expiry",
@@ -179,6 +209,12 @@ REQUIRED_TRIGGERS = {
 FORBIDDEN_TRIGGERS = {"conversations_legacy_writer_guard"}
 
 REQUIRED_CONSTRAINTS = {
+    "ai_solutions_criticality_check",
+    "ai_solutions_data_categories_check",
+    "ai_solutions_decided_at_check",
+    "ai_solutions_reference_unique",
+    "ai_solutions_rejection_reason_check",
+    "ai_solutions_status_check",
     "case_whatsapp_bindings_case_unique",
     "chat_audits_session_hash_version_check",
     "customer_preferences_json_object_check",

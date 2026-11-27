@@ -58,6 +58,8 @@ Does not:
 | Per-case `wa_id` (E.164 phone) | `case_whatsapp_bindings` (migration 016, `app/support/wa_binding.py`) | **reversibly** encrypted (Fernet, key `SUPPORT_WA_ENC_KEY`) plus an HMAC for lookup; wiped when the case closes or is cancelled, or after `SUPPORT_WA_BINDING_MAX_DAYS` (default 15 days) | legitimate interest (art. 7, IX) or public policy execution (art. 7, III); to be confirmed |
 | Destination phone (citizen and staff) | `to` field of `operational_outbox.payload_sanitized` (`app/support/whatsapp_bridge.py:243-252`; `app/db/operational.py:556-558`) | stored **in clear**, despite the column name, so the dispatcher can deliver; no outbox purge routine exists in the code | same (citizen); legitimate interest (art. 7, IX) for staff phones |
 | Staff member E.164 phone | HttpOnly remember cookie `<token>.<E.164>` in the staff member's browser (`app/support/staff_auth.py:14-19`, `:118`) | the database keeps only the token HMAC; the phone is in clear in the staff member's own cookie | legitimate interest (art. 7, IX): team access management |
+| Name and role of an AI solution owner | `ai_solutions.owner_name` and `owner_role` (migration 021, AI solution intake) | employee data declared by the submitter; no e-mail, phone or ID; shown in the solution card and the inventory CSV, both behind a staff session | legitimate interest (art. 7, IX): AI governance; to be confirmed |
+| Intake free text (purpose, notes, conditions) | `ai_solutions`, `ai_solution_events.note_sanitized` | masked by `sanitize_for_persistence` before storage; kept out of logs | same |
 | Client IP address | `rate_limit_exceeded` log (`app/main.py`, `/chat` and `/web/chat` middleware) | only a truncated HMAC SHA-256 (`client_host_hash`, keyed by `PERSISTENCE_HASH_SECRET`); the clear IP never reaches the log | legitimate interest (art. 7, IX): channel security; to be confirmed |
 | Asset code and address | maintenance ticket | operational, not personal | — |
 
@@ -92,6 +94,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193", "nunca pede senha", "4 horas" (incident) and "24 horas" (auditor notice) even without an LLM |
 | Development login limited to the local machine | `ENABLE_TEAM_DEV_LOGIN` (default `false`), `app/support/dev_login.py`: refuses to boot without an explicit `APP_ENV=development`; needs a loopback peer and `Host`; refuses proxy headers | `tests/test_team_dev_login.py` |
 | Monthly report with no personal data | `app/support/monthly_report.py`, `GET /web/support/reports/monthly.csv` (staff session) | `tests/test_monthly_report.py` (no phone, name, e-mail, summary or `request_id` column; formula injection neutralized) |
+| AI solution intake with rule-based criticality | `governance/ai-intake.yaml` (demo), `app/ai_intake/`: deterministic criticality, deadline frozen at submission, separation of duties (the submitter never reviews), DPIA (RIPD) reference required to approve high criticality, decisions with a note and a closed-list reason, event trail; database `CHECK`s for the closed lists | `tests/test_ai_intake.py`, `tests/test_ai_intake_routes.py`, `tests/integration/test_ai_intake_postgres.py` |
 | Late reason from a closed list | `late_reason` required when closing after the deadline; database `CHECK`, no free text | `tests/test_monthly_report.py`, `tests/integration/test_monthly_report_postgres.py` |
 | Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
 | Masking before the provider | the question goes through the same masking before the embedding query and the LLM prompt; local detection (card, secret) uses the original text | `tests/test_provider_masking.py` |
@@ -112,6 +115,7 @@ Suggested rating: **medium risk**, mandatory human review.
 - Known masking limits: a phone glued to letters (`telefone11...`) is not caught; a formatted CNPJ is only partly masked; an ISO birth date stays readable (dd/mm/yyyy already did).
 - Writing the case priority to a real PostgreSQL was not verified in this copy.
 - No web UI for the console; the console is an API.
+- AI solution intake: no roles (anyone on the console team can review; separation of duties is the only rule); deadlines in calendar days; criticality depends on what the submitter declares; no attachments (the DPIA is only a reference) and no notifications.
 
 ## Review log
 
@@ -119,3 +123,4 @@ Suggested rating: **medium risk**, mandatory human review.
 | --- | --- | --- |
 | 2026-11-26 | IT (AI development) — sample (demo) | first version |
 | 2026-11-26 | coding agent, human review pending | data, transfer and limits aligned with the code |
+| 2026-11-27 | coding agent, human review pending | AI solution intake: owner data, controls and limits |
