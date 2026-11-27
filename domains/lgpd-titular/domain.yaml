@@ -140,14 +140,18 @@ handoff:
         - anonimizar
         - parar de usar
 
-# Prazo legal do titular: declaracao completa em ate 15 dias (LGPD art. 19, II).
-# urgent/high sao metas internas de triagem do encarregado, ficticias para a
-# demonstracao; nao sao prazos legais.
+# Prazo legal do titular para confirmacao/acesso: declaracao completa em ate
+# 15 dias (LGPD art. 19, II). Para correcao, eliminacao e os demais direitos do
+# art. 18, o prazo segue regulamento (art. 18, §5º); a demo aplica os mesmos 15
+# dias como meta interna. urgent/high sao metas internas de triagem do
+# encarregado, ficticias para a demonstracao; nao sao prazos legais.
+# Sem `low_minutes`: `low` cairia no SLA global (24h), mais curto que `normal`;
+# nenhuma regra deste dominio usa `low` hoje (ver docs/project-map.md).
 sla:
   basis: "LGPD art. 19, II: ate 15 dias para a declaracao completa (normal). Urgente e alta sao metas internas de demonstracao."
   urgent_minutes: 240     # 4h  - triagem de incidente (meta interna demo)
   high_minutes: 1440      # 24h - terceiros / autoridade (meta interna demo)
-  normal_minutes: 21600   # 15 dias - pedido do titular (art. 19, II)
+  normal_minutes: 21600   # 15 dias - pedido do titular (acesso: art. 19, II; demais: meta interna demo)
 
 knowledge:
   sources:
