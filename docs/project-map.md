@@ -30,6 +30,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
+| Mascarar a pergunta antes do provedor de LLM/embeddings | ✅ | `sanitize_for_persistence` aplicado antes de `retrieve` e `build_prompt` em `app/orchestration/chat_flow.py`; deteccao local continua no texto original | historico de conversa enviado ao prompt ja vem mascarado da persistencia | `tests/test_provider_masking.py` |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
 | Relatorio mensal para a fiscalizacao | ⬜ | metricas do console | exportacao por categoria e prazo | — |
