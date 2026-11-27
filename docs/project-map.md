@@ -34,7 +34,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
 | Relatorio mensal para a fiscalizacao | ⬜ | metricas do console | exportacao por categoria e prazo | — |
-| Detector de CPF com digito verificador | ⬜ | mascaramento de cartao, CNPJ, e-mail, telefone, IP | CPF explicito (hoje provavelmente cai na regra de telefone) | — |
+| Detector de CPF com digito verificador | ✅ | `[REDACTED_CPF]` (mascara sempre; 11 digitos so com digito verificador), datas ISO e protocolos rotulados preservados, `REDACTION_VERSION` `phase0-v2` com leitura de `phase0-v1` | protocolo sem rotulo continua mascarado (limite aceito) | `tests/test_pii_cpf.py`, `tests/test_pii_card.py` |
 
 ## Herdado do nucleo (sem mudanca nesta copia)
 
