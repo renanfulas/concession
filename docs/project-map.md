@@ -26,6 +26,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Dominio `concessoes-manutencao` | ✅ | 14 ativos ficticios, anexo de SLA ficticio (itens 3.1-3.6), 5 regras de escalonamento com prioridade, prompts | trocar prazos e inventario pelos do contrato real | evals base 10/10, confinamento 17/17, `tests/test_concessoes_domain.py` |
 | Dominio `lgpd-titular` | ✅ | aviso de privacidade ficticio, direitos (art. 18), prazos (art. 19, II), 4 regras com prioridade | revisao do texto pelo encarregado real | evals base 10/10, confinamento 16/16 |
 | SLA por dominio (`sla:` no `domain.yaml`) | ✅ | override por prioridade, `basis` na resposta do console, lista, detalhe e metricas | — | `tests/test_support_sla.py`, `tests/test_web_support_console.py` |
+| `domain.yaml` invalido nao some calado | ✅ | `DomainLoader` registra `domain_config_invalid` (WARN, so o nome do campo, nunca o valor) e um teste exige que todo dominio versionado carregue | — | `tests/test_domain_loader_warnings.py` |
 | Prioridade do caso por regra | ✅ codigo · 🟡 banco | `escalation_rules[].priority`, `resolve_case_priority`, coluna `priority` no INSERT | rodar a suite de integracao PostgreSQL (`docker-compose.test.yml`) para provar o INSERT | `tests/test_concessoes_domain.py`; integracao nao rodada nesta copia |
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
