@@ -1,4 +1,4 @@
-# Como registrar um defeito no mobiliario urbano
+# Como registrar um defeito no mobiliário urbano
 
 Para abrir o chamado, sao necessarios apenas dois dados:
 

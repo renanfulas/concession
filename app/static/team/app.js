@@ -16,6 +16,29 @@ const API = {
   devLogin: "/web/support/auth/dev-login",
   domains: "/web/support/domains",
   cases: "/web/support/cases",
+  // Backlog por cor da fila inteira, para o painel do topo.
+  metrics: "/web/support/metrics",
+};
+
+const REASON_LABELS = {
+  risco_seguranca: "Risco a pessoas",
+  tela_inoperante: "Tela inoperante",
+  informacao_incorreta: "Informação incorreta",
+  defeito_geral: "Defeito",
+  cobranca_atendimento: "Cobrança de atendimento",
+  conservacao_limpeza: "Conservação e limpeza",
+  notificacao_fiscalizacao: "Notificação da fiscalização",
+  incidente_dados: "Incidente de dados",
+  pedido_titular: "Pedido do titular",
+  dados_de_terceiros: "Dados de terceiros",
+  reclamacao_autoridade: "Reclamação à ANPD",
+  low_confidence: "Baixa confiança",
+  provider_error: "Sem resposta automática",
+  sensitive_topic: "Tema sensível",
+  secret_request: "Pedido de segredo",
+  prompt_injection_attempt: "Tentativa de injeção",
+  explicit_human_request: "Pediu uma pessoa",
+  out_of_scope: "Fora do escopo",
 };
 
 const REFRESH_INTERVAL_MS = 60 * 1000;
@@ -412,7 +435,7 @@ async function refreshQueue() {
   state.loading = true;
   state.pendingRefresh = false;
   try {
-    const result = await api(buildCasesUrl());
+    const [result] = await Promise.all([api(buildCasesUrl()), refreshKpis()]);
     renderQueue(result);
     el("updated-at").textContent = `Atualizado às ${clockFormat.format(new Date())}`;
   } catch (error) {
@@ -427,6 +450,37 @@ async function refreshQueue() {
   }
   if (state.pendingRefresh) {
     refreshQueue();
+  }
+}
+
+async function refreshKpis() {
+  const params = new URLSearchParams({ window: "14d" });
+  const domain = el("filter-domain").value;
+  if (domain) {
+    params.set("domain", domain);
+  }
+  try {
+    const metrics = await api(`${API.metrics}?${params.toString()}`);
+    const byColor = (metrics && metrics.backlog && metrics.backlog.by_color) || {};
+    let total = 0;
+    for (const color of ["red", "yellow", "green", "paused"]) {
+      const value = Number(byColor[color] || 0);
+      total += value;
+      el(`kpi-${color}`).textContent = String(value);
+    }
+    el("kpi-total").textContent = String(total);
+  } catch (error) {
+    // O painel e um resumo; a fila continua funcionando sem ele.
+    for (const id of ["kpi-red", "kpi-yellow", "kpi-green", "kpi-paused", "kpi-total"]) {
+      el(id).textContent = "–";
+    }
+  }
+}
+
+function syncKpiButtons() {
+  const color = el("filter-color").value;
+  for (const button of document.querySelectorAll(".kpi[data-color]")) {
+    button.setAttribute("aria-pressed", String(button.dataset.color === color));
   }
 }
 
@@ -544,11 +598,21 @@ function renderCase(item) {
     `Prioridade ${PRIORITY_LABELS[item.priority] || item.priority}`
   );
   const domainName = state.domainNames[item.domain] || item.domain;
-  const domain = textNode("span", "domain", domainName);
+  const domain = textNode("span", `domain domain-${item.domain}`, domainName);
   const reference = textNode("code", "case-ref", `#${String(item.case_id).slice(0, 8)}`);
   reference.title = "Referência do caso (início do identificador)";
 
   head.append(lightBadge, priority, domain, reference);
+
+  const reasons = document.createElement("div");
+  reasons.className = "reasons";
+  for (const code of Array.isArray(item.reason_codes) ? item.reason_codes : []) {
+    reasons.append(textNode("span", "reason", REASON_LABELS[code] || String(code).replace(/_/g, " ")));
+  }
+  // Resumo ja mascarado na gravacao (telefone, e-mail, cartao, CNPJ, IP).
+  const summary = item.summary ? textNode("p", "case-summary", item.summary) : null;
+
+  const meter = renderDeadlineMeter(sla, light);
 
   const deadline = document.createElement("dl");
   deadline.className = "case-fields";
@@ -581,12 +645,51 @@ function renderCase(item) {
   );
   details.append(extra);
 
-  li.append(head, deadline, details);
+  li.append(head, ...(reasons.childElementCount ? [reasons] : []), ...(summary ? [summary] : []), meter, deadline, details);
   return li;
 }
 
+function renderDeadlineMeter(sla, light) {
+  const wrapper = document.createElement("div");
+  wrapper.className = `deadline-meter light-${light || "none"}`;
+  const ratio = sla && Number.isFinite(sla.elapsed_ratio) ? sla.elapsed_ratio : null;
+  const percent = ratio === null ? 0 : Math.round(ratio * 100);
+
+  const bar = document.createElement("div");
+  bar.className = "deadline-bar";
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-label", "Prazo consumido");
+  bar.setAttribute("aria-valuemin", "0");
+  bar.setAttribute("aria-valuemax", "100");
+  bar.setAttribute("aria-valuenow", String(Math.min(100, Math.max(0, percent))));
+  const fill = document.createElement("span");
+  fill.className = "deadline-fill";
+  fill.style.width = `${Math.min(100, Math.max(2, percent))}%`;
+  bar.append(fill);
+
+  let label = "Sem prazo calculado";
+  if (sla && sla.paused) {
+    label = `Pausado · ${percent}% do prazo usado`;
+  } else if (ratio !== null) {
+    label = percent > 100 ? `${percent}% do prazo · estourado` : `${percent}% do prazo usado`;
+  }
+  wrapper.append(bar, textNode("span", "deadline-label", label));
+  return wrapper;
+}
+
 el("filter-domain").addEventListener("change", refreshQueue);
-el("filter-color").addEventListener("change", refreshQueue);
+el("filter-color").addEventListener("change", () => {
+  syncKpiButtons();
+  refreshQueue();
+});
+for (const button of document.querySelectorAll(".kpi[data-color]")) {
+  button.addEventListener("click", () => {
+    const select = el("filter-color");
+    select.value = select.value === button.dataset.color ? "" : button.dataset.color;
+    syncKpiButtons();
+    refreshQueue();
+  });
+}
 el("refresh-button").addEventListener("click", refreshQueue);
 el("filters").addEventListener("submit", (event) => event.preventDefault());
 

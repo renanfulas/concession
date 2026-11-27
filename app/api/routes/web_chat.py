@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
+from app.support.public_case import public_case_summary, public_sources
 from app.api.schemas.feedback import FeedbackRequest, FeedbackResponse
 from app.api.schemas.web_chat import (
     WebChatRequest,
@@ -156,6 +157,15 @@ def create_web_chat(
         support_code=chat_response["request_id"],
         error_code=chat_response["error_code"],
         support_deep_link=persistence_result.support_deep_link,
+        notices=list(chat_response.get("notices") or []),
+        case=public_case_summary(
+            domain=domain,
+            priority=resolve_case_priority(domain, list(chat_response["handoff_reasons"])),
+            handoff_status=str(chat_response["handoff_status"]),
+            request_id=str(chat_response["request_id"]),
+            settings=settings,
+        ),
+        sources=public_sources(list(chat_response["references"]), settings.domains_path),
     )
 
 

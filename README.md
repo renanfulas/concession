@@ -86,6 +86,9 @@ novo no nucleo.
   casos abertos), o resultado contra o prazo e o motivo do atraso, que e
   obrigatorio ao fechar depois do prazo e vem de uma lista fechada. Sem dado
   pessoal. Botao "Baixar CSV" na `/team`.
+- **Tela do cidadao (`/chat-ui`)**: aviso da regra como alerta, cartao
+  "Chamado registrado" com protocolo, prioridade, prazo e base, e as fontes
+  consultadas pelo titulo. Nenhum codigo interno aparece para o cidadao.
 - **Tela da fila do time (`/team`)**: pagina estatica, somente leitura, com o
   login OTP staff existente, fila em ordem de atencao, semaforo com rotulo em
   texto, prazo no fuso America/Sao_Paulo, base do prazo, filtros por dominio e
@@ -304,6 +307,9 @@ translated.
   open case), the outcome against the deadline and the late reason, which is
   required when closing after the deadline and comes from a closed list. No
   personal data. "Baixar CSV" button on `/team`.
+- **Citizen screen (`/chat-ui`)**: the rule's notice as an alert, a "case
+  registered" card with protocol, priority, deadline and basis, and the
+  sources consulted by title. No internal code reaches the citizen.
 - **Team queue screen (`/team`)**: a static, read-only page behind the
   existing staff OTP login. The queue is ordered by attention (traffic-light
   color, then nearest deadline), with the deadline in America/Sao_Paulo time,

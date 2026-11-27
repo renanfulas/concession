@@ -117,7 +117,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
         key="cm-01",
         domain="concessoes-manutencao",
         question=(
-            "Fio exposto na base do relogio REL-0101 (Av. Paulista, altura do 900). "
+            "Fio exposto na base do relógio REL-0101 (Av. Paulista, altura do 900). "
             "Pedestres passando bem perto. [demo]"
         ),
         expected_priority="urgent",
@@ -130,8 +130,8 @@ DEMO_CASES: tuple[DemoCase, ...] = (
         key="cm-02",
         domain="concessoes-manutencao",
         question=(
-            "Vidro quebrado no abrigo ABR-1104, pedacos de vidro espalhados na "
-            "calcada. [demo]"
+            "Vidro quebrado no abrigo ABR-1104, pedaços de vidro espalhados na "
+            "calçada. [demo]"
         ),
         expected_priority="urgent",
         expected_color="green",
@@ -142,7 +142,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="cm-03",
         domain="concessoes-manutencao",
-        question="Tela apagada no painel PNL-2010 desde o inicio da manha. [demo]",
+        question="Tela apagada no painel PNL-2010 desde o início da manhã. [demo]",
         expected_priority="high",
         expected_color="yellow",
         state="open",
@@ -153,8 +153,8 @@ DEMO_CASES: tuple[DemoCase, ...] = (
         key="cm-04",
         domain="concessoes-manutencao",
         question=(
-            "Chegou notificacao da fiscalizacao sobre o abrigo ABR-1290, "
-            "na Av. Eusebio Matoso. [demo]"
+            "Chegou notificação da fiscalização sobre o abrigo ABR-1290, "
+            "na Av. Eusébio Matoso. [demo]"
         ),
         expected_priority="high",
         expected_color="red",
@@ -165,7 +165,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="cm-05",
         domain="concessoes-manutencao",
-        question="O relogio REL-0215 esta com a hora errada, uns 20 minutos atrasado. [demo]",
+        question="O relógio REL-0215 está com a hora errada, uns 20 minutos atrasado. [demo]",
         expected_priority="normal",
         expected_color="green",
         state="open",
@@ -175,7 +175,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="cm-06",
         domain="concessoes-manutencao",
-        question="Temperatura errada no relogio REL-0307, marcando 45 graus. [demo]",
+        question="Temperatura errada no relógio REL-0307, marcando 45 graus. [demo]",
         expected_priority="normal",
         expected_color="paused",
         state="waiting_customer",
@@ -185,7 +185,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="cm-07",
         domain="concessoes-manutencao",
-        question="Abrigo ABR-1377 com pichacao e cartaz colado na lateral. [demo]",
+        question="Abrigo ABR-1377 com pichação e cartaz colado na lateral. [demo]",
         expected_priority="low",
         expected_color="yellow",
         state="open",
@@ -195,7 +195,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="cm-08",
         domain="concessoes-manutencao",
-        question="Painel PNL-2101 da estacao de bicicletas esta sujo e com adesivo. [demo]",
+        question="Painel PNL-2101 da estação de bicicletas está sujo e com adesivo. [demo]",
         expected_priority="low",
         expected_color="green",
         state="open",
@@ -207,7 +207,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
         domain="lgpd-titular",
         question=(
             "Recebi um aviso estranho e acho que houve vazamento do meu cadastro "
-            "no app de demonstracao. [demo]"
+            "no app de demonstração. [demo]"
         ),
         expected_priority="urgent",
         expected_color="red",
@@ -218,7 +218,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
         key="lg-02",
         domain="lgpd-titular",
         question=(
-            "Quero as imagens da camera do abrigo ABR-1104 de ontem a tarde. [demo]"
+            "Quero as imagens da câmera do abrigo ABR-1104 de ontem à tarde. [demo]"
         ),
         expected_priority="high",
         expected_color="yellow",
@@ -229,7 +229,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
         key="lg-03",
         domain="lgpd-titular",
         question=(
-            "Se ninguem responder vou abrir reclamacao na ANPD sobre o uso do meu "
+            "Se ninguém responder vou abrir reclamação na ANPD sobre o uso do meu "
             "cadastro. [demo]"
         ),
         expected_priority="high",
@@ -240,7 +240,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="lg-04",
         domain="lgpd-titular",
-        question="Quero uma copia dos dados que voces tem sobre mim. [demo]",
+        question="Quero uma cópia dos dados que vocês têm sobre mim. [demo]",
         expected_priority="normal",
         expected_color="green",
         state="in_progress",
@@ -249,7 +249,7 @@ DEMO_CASES: tuple[DemoCase, ...] = (
     DemoCase(
         key="lg-05",
         domain="lgpd-titular",
-        question="Pedi para excluir meu cadastro e ate agora nada aconteceu. [demo]",
+        question="Pedi para excluir meu cadastro e até agora nada aconteceu. [demo]",
         expected_priority="normal",
         expected_color="red",
         state="open",

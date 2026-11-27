@@ -52,6 +52,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   addMessage("user", message);
+  document.querySelector(".chat")?.classList.add("is-started");
   input.value = "";
   resizeInput();
   setLoading(true);
@@ -170,6 +171,13 @@ function normalizeChatPayload(response, payload) {
     support_code: supportCode,
     error_code: asCleanString(payload?.error_code),
     retry_after: response.headers.get("retry-after"),
+    notices: Array.isArray(payload?.notices)
+      ? payload.notices.filter(Boolean).map(String)
+      : [],
+    case: payload?.case && typeof payload.case === "object" ? payload.case : null,
+    sources: Array.isArray(payload?.sources)
+      ? payload.sources.filter((item) => item && item.title)
+      : [],
   };
 }
 
@@ -235,18 +243,160 @@ function addStatus(text) {
 }
 
 function addAgentResponse(response) {
-  const text = response.answer || buildFallbackAnswer(response);
-  const row = addMessage("agent", text, response);
+  const row = document.createElement("div");
+  row.className = "message agent";
+
+  // Aviso fixo da regra (ex.: "ligue 193"): vem antes de tudo, como alerta.
+  response.notices.forEach((notice) => row.appendChild(renderNotice(notice)));
+
+  const text = stripNotices(response.answer, response.notices) || buildFallbackAnswer(response);
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  renderSafeMessageText(bubble, text);
+  row.appendChild(bubble);
+
+  if (response.case) {
+    row.appendChild(renderCaseCard(response.case));
+  } else if (response.escalated) {
+    row.appendChild(renderEscalationNotice(response));
+  }
+
+  if (response.sources.length) {
+    row.appendChild(renderSources(response.sources));
+  }
+
+  if (!response.case) {
+    const metadata = renderSupportMeta(response, "default");
+    if (metadata) {
+      row.appendChild(metadata);
+    }
+  }
 
   if (response.request_id) {
     row.appendChild(renderFeedbackCard(response));
   }
 
-  if (response.escalated && response.request_id) {
-    row.appendChild(renderConsentPrompt(response.request_id));
+  if (response.escalated && response.request_id && response.case) {
+    row.appendChild(renderConsentPrompt(response.request_id, response.case));
   }
 
+  messages.appendChild(row);
   scrollToBottom();
+}
+
+function stripNotices(answer, notices) {
+  let text = String(answer || "");
+  notices.forEach((notice) => {
+    if (text.startsWith(notice)) {
+      text = text.slice(notice.length).replace(/^\s+/, "");
+    }
+  });
+  return text;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function renderNotice(text) {
+  const node = document.createElement("div");
+  node.className = "notice";
+  node.setAttribute("role", "note");
+
+  const icon = document.createElementNS(SVG_NS, "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("fill", "none");
+  icon.setAttribute("stroke-width", "2");
+  icon.setAttribute("stroke-linecap", "round");
+  icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("aria-hidden", "true");
+  icon.classList.add("notice-icon");
+  ["M12 3 2 21h20L12 3Z", "M12 10v5", "M12 18h.01"].forEach((d) => {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    icon.appendChild(path);
+  });
+
+  const body = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = "Orientação importante";
+  const message = document.createElement("span");
+  message.textContent = text;
+  body.append(title, message);
+
+  node.append(icon, body);
+  return node;
+}
+
+const PRIORITY_TAG = {
+  urgent: "tag-urgent",
+  high: "tag-high",
+  normal: "tag-normal",
+  low: "tag-low",
+};
+
+function renderCaseCard(caseInfo) {
+  const card = document.createElement("section");
+  card.className = "case-card";
+  card.setAttribute("aria-label", "Chamado registrado");
+
+  const head = document.createElement("div");
+  head.className = "case-card-head";
+  const title = document.createElement("strong");
+  title.textContent =
+    caseInfo.status === "aguardando_confirmacao"
+      ? "Chamado aberto · falta confirmar"
+      : "Chamado registrado";
+  const protocol = document.createElement("span");
+  protocol.className = "case-protocol";
+  protocol.textContent = `Protocolo ${caseInfo.protocol || ""}`;
+  head.append(title, protocol);
+
+  const details = document.createElement("dl");
+  const priority = document.createElement("span");
+  priority.className = `tag ${PRIORITY_TAG[caseInfo.priority] || "tag-normal"}`;
+  priority.textContent = caseInfo.priority_label || caseInfo.priority || "";
+  details.append(makeMetaItem("Prioridade", priority));
+  if (caseInfo.deadline_label) {
+    const deadline = document.createElement("span");
+    deadline.className = "case-deadline";
+    deadline.textContent = `Atendimento ${caseInfo.deadline_label}`;
+    details.append(makeMetaItem("Prazo", deadline));
+  }
+  details.append(makeMetaItem("Base do prazo", caseInfo.basis || ""));
+  details.append(makeMetaItem("Canal", caseInfo.channel_label || ""));
+
+  const foot = document.createElement("p");
+  foot.className = "case-card-foot";
+  foot.textContent =
+    caseInfo.status === "aguardando_confirmacao"
+      ? "A equipe assume assim que você confirmar o contato abaixo."
+      : "Uma pessoa da equipe assume a partir daqui. Guarde o protocolo para acompanhar.";
+
+  card.append(head, details, foot);
+  return card;
+}
+
+function renderSources(sources) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "sources";
+
+  const label = document.createElement("span");
+  label.className = "sources-label";
+  label.textContent = "Consultado:";
+  wrapper.appendChild(label);
+
+  sources.forEach((source) => {
+    const item = document.createElement("span");
+    item.className = "source";
+    const kind = document.createElement("span");
+    kind.className = "source-kind";
+    kind.textContent = source.kind || "Documento";
+    const title = document.createElement("span");
+    title.textContent = source.title;
+    item.append(kind, title);
+    wrapper.appendChild(item);
+  });
+
+  return wrapper;
 }
 
 function addAgentError(error) {
@@ -285,10 +435,6 @@ function addMessage(role, text, response = null, tone = "default") {
     row.appendChild(renderEscalationNotice(response));
   }
 
-  if (response?.references?.length) {
-    row.appendChild(renderReferences(response.references));
-  }
-
   const metadata = renderSupportMeta(response, tone);
   if (metadata) {
     row.appendChild(metadata);
@@ -301,52 +447,37 @@ function addMessage(role, text, response = null, tone = "default") {
 
 function renderEscalationNotice(response) {
   const handoff = document.createElement("div");
-  handoff.className = "handoff";
+  handoff.className = "consent-card";
 
-  const supportCode = clipSupportCode(response.support_code || response.request_id);
+  const supportCode = shortProtocol(response.support_code || response.request_id);
   handoff.textContent = supportCode
-    ? `Talvez seja melhor um humano revisar este caso. Guarde o código de suporte: ${supportCode}.`
-    : "Talvez seja melhor um humano revisar este caso.";
+    ? `Este caso precisa de uma pessoa. Guarde o protocolo ${supportCode} para continuar no suporte.`
+    : "Este caso precisa de uma pessoa da equipe.";
 
   return handoff;
 }
 
-function renderReferences(references) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "references";
-
-  const label = document.createElement("span");
-  label.className = "references-label";
-  label.textContent = "Base usada:";
-  wrapper.appendChild(label);
-
-  references.forEach((reference) => {
-    const item = document.createElement("span");
-    item.className = "reference";
-    item.textContent = filenameOnly(String(reference));
-    wrapper.appendChild(item);
-  });
-
-  return wrapper;
-}
-
 function renderSupportMeta(response, tone) {
-  if (!response?.request_id && !response?.error_code) {
+  // So o protocolo curto: request_id e error_code sao internos e nunca vao
+  // crus para a tela do cidadao.
+  const code = shortProtocol(response?.support_code || response?.request_id);
+  if (!code) {
     return null;
   }
 
-  const wrapper = document.createElement("dl");
+  const wrapper = document.createElement("p");
   wrapper.className = `support-meta${tone === "error" ? " support-meta-error" : ""}`;
-
-  if (response.request_id) {
-    wrapper.append(makeMetaItem("Código", clipSupportCode(response.request_id)));
-  }
-
-  if (response.error_code) {
-    wrapper.append(makeMetaItem("Status", response.error_code));
-  }
-
+  wrapper.textContent = `Protocolo do atendimento: ${code}`;
   return wrapper;
+}
+
+function shortProtocol(value) {
+  const text = asCleanString(value);
+  const digits = text.replace(/[^0-9a-f]/gi, "").toUpperCase().slice(0, 8);
+  if (digits.length < 8) {
+    return clipSupportCode(text).toUpperCase().slice(0, 9);
+  }
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
 }
 
 function makeMetaItem(label, value) {
@@ -356,7 +487,11 @@ function makeMetaItem(label, value) {
   term.textContent = label;
 
   const detail = document.createElement("dd");
-  detail.textContent = String(value);
+  if (value instanceof Node) {
+    detail.appendChild(value);
+  } else {
+    detail.textContent = String(value);
+  }
 
   fragment.append(term, detail);
   return fragment;
@@ -452,14 +587,23 @@ function showFeedbackError(wrapper, message) {
 // is never persisted); instead, the OTP step shows a local "still there?" nudge
 // after the server-configured window, reusing the same resend endpoint.
 
-function renderConsentPrompt(requestId) {
+function renderConsentPrompt(requestId, caseInfo) {
   const wrapper = document.createElement("section");
   wrapper.className = "consent-card";
 
   const title = document.createElement("p");
   title.className = "consent-title";
   title.textContent =
-    "Quer que eu conecte você com um atendente humano agora? Vou pedir para confirmar seu WhatsApp antes, por segurança.";
+    caseInfo?.status === "aguardando_confirmacao"
+      ? "Para a equipe assumir, confirme seu WhatsApp."
+      : "Quer receber o retorno da equipe pelo WhatsApp?";
+
+  const text = document.createElement("p");
+  text.className = "consent-text";
+  text.textContent =
+    caseInfo?.status === "aguardando_confirmacao"
+      ? "Enviamos um código para confirmar o número, por segurança."
+      : "Enviamos um código para confirmar o número, por segurança. É opcional: o chamado já está registrado.";
 
   const actions = document.createElement("div");
   actions.className = "consent-actions";
@@ -467,12 +611,12 @@ function renderConsentPrompt(requestId) {
   const yesButton = document.createElement("button");
   yesButton.type = "button";
   yesButton.className = "consent-button consent-button-primary";
-  yesButton.textContent = "Sim, conectar";
+  yesButton.textContent = "Sim, pelo WhatsApp";
 
   const noButton = document.createElement("button");
   noButton.type = "button";
   noButton.className = "consent-button";
-  noButton.textContent = "Agora não";
+  noButton.textContent = "Não precisa";
 
   yesButton.addEventListener("click", () => {
     wrapper.replaceChildren();
@@ -483,7 +627,7 @@ function renderConsentPrompt(requestId) {
   });
 
   actions.append(yesButton, noButton);
-  wrapper.append(title, actions);
+  wrapper.append(title, text, actions);
   return wrapper;
 }
 
@@ -697,7 +841,7 @@ function buildTicketConfirmation(ticket) {
 
   const title = document.createElement("p");
   title.className = "consent-ticket-title";
-  title.textContent = `Ticket aberto: ${clipSupportCode(ticket.support_case_id)}`;
+  title.textContent = `Retorno confirmado · chamado ${shortProtocol(ticket.support_case_id)}`;
 
   const meta = document.createElement("dl");
   meta.className = "support-meta";
@@ -711,7 +855,7 @@ function buildTicketConfirmation(ticket) {
 
   const note = document.createElement("p");
   note.className = "consent-hint";
-  note.textContent = "Um atendente humano vai continuar por aqui.";
+  note.textContent = "A equipe vai responder pelo WhatsApp confirmado.";
 
   wrapper.append(title, meta, note);
   return wrapper;
@@ -876,11 +1020,6 @@ function clipSupportCode(value) {
   }
 
   return text.slice(0, MAX_VISIBLE_SUPPORT_CODE);
-}
-
-function filenameOnly(reference) {
-  const clean = reference.replace(/\\/g, "/");
-  return clean.split("/").filter(Boolean).pop() || clean;
 }
 
 function formatRetryAfter(value) {

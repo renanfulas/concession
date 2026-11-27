@@ -63,11 +63,11 @@ response:
   max_context_chunks: 5
   max_answer_length: short
   welcome_message: |-
-    Este e o canal de privacidade e dados pessoais (LGPD). Ambiente de demonstracao.
+    Este é o canal de privacidade e dados pessoais (LGPD). Ambiente de demonstração.
 
-    Posso explicar como os dados sao tratados e registrar um pedido de acesso, correcao ou exclusao para o encarregado de dados.
-  no_context_message: Nao encontrei essa informacao no aviso de privacidade. Vou encaminhar sua pergunta ao encarregado de dados, que responde pelo atendimento humano.
-  provider_error_message: Nao consegui gerar uma resposta automatica agora. Vou encaminhar sua solicitacao ao encarregado de dados pelo atendimento humano.
+    Posso explicar como os dados são tratados e registrar um pedido de acesso, correção ou exclusão para o encarregado de dados.
+  no_context_message: Não encontrei essa informação no aviso de privacidade. Vou encaminhar sua pergunta ao encarregado de dados, que responde pelo atendimento humano.
+  provider_error_message: Não consegui gerar uma resposta automática agora. Vou encaminhar sua solicitação ao encarregado de dados pelo atendimento humano.
 
 handoff:
   confidence_threshold: 0.55
@@ -96,7 +96,7 @@ handoff:
     - reason: incidente_dados
       priority: urgent
       # Texto fixo, mostrado antes de qualquer resposta (inclusive sem LLM).
-      notice: "Seu relato vai ao encarregado de dados com prioridade maxima: triagem em ate 4 horas (meta interna demo). Enquanto o encarregado analisa: troque as senhas das contas que voce acha que foram afetadas e nao informe senha nem codigo a quem pedir em nome deste canal. Este canal nunca pede senha, CPF ou codigo por mensagem."
+      notice: "Seu relato vai ao encarregado de dados com prioridade máxima: triagem em até 4 horas (meta interna demo). Enquanto o encarregado analisa, troque as senhas das contas que você acha que foram afetadas e não informe senha nem código a quem pedir em nome deste canal. Este canal nunca pede senha, CPF ou código por mensagem."
       terms:
         - vazamento
         - vazaram
@@ -160,7 +160,7 @@ handoff:
 # Sem `low_minutes`: `low` cairia no SLA global (24h), mais curto que `normal`;
 # nenhuma regra deste dominio usa `low` hoje (ver docs/project-map.md).
 sla:
-  basis: "LGPD art. 19, II: ate 15 dias para a declaracao completa (normal). Urgente e alta sao metas internas de demonstracao."
+  basis: "LGPD art. 19, II: até 15 dias para a declaração completa (normal). Urgente e alta são metas internas de demonstração."
   urgent_minutes: 240     # 4h  - triagem de incidente (meta interna demo)
   high_minutes: 1440      # 24h - terceiros / autoridade (meta interna demo)
   normal_minutes: 21600   # 15 dias - pedido do titular (acesso: art. 19, II; demais: meta interna demo)

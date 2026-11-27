@@ -1,4 +1,4 @@
-# Pichacao, adesivos e sujeira
+# Pichação, adesivos e sujeira
 
 Picharam, pichou ou deixaram o equipamento pichado ou sujo? Este e o caso de conservacao e limpeza.
 

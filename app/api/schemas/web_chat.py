@@ -30,6 +30,15 @@ class WebChatResponse(BaseModel):
     # quando o caso ja esta aberto (nao pending_consent) e a frente esta
     # configurada; None em qualquer outro caso.
     support_deep_link: str | None = None
+    # Avisos fixos das regras (ex.: "ligue 193"), ja incluidos no inicio de
+    # ``answer``; a tela os mostra como alerta separado.
+    notices: list[str] = Field(default_factory=list)
+    # Chamado aberto por este turno: protocolo curto, prioridade, prazo e
+    # base, das regras do dominio. None quando nenhum caso foi para a fila.
+    case: dict[str, str] | None = None
+    # Titulos legiveis dos documentos consultados (``references`` segue com
+    # os caminhos estaveis para quem integra).
+    sources: list[dict[str, str]] = Field(default_factory=list)
 
 
 class WebFeedbackRequest(BaseModel):

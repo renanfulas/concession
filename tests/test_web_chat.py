@@ -82,6 +82,10 @@ def test_web_chat_accepts_valid_payload_without_api_key_and_returns_public_contr
         "support_code": "web-chat-ok-1",
         "error_code": None,
         "support_deep_link": None,
+        "notices": [],
+        "case": None,
+        # The fake references a file outside domains/: title from the name.
+        "sources": [{"title": "Qrcode whatsapp", "kind": "Documento"}],
     }
     assert "domain" not in payload
     assert "confidence" not in payload
@@ -410,6 +414,9 @@ def test_web_chat_greeting_returns_router_menu_then_clarification(
         "support_code": "web-chat-greeting-1",
         "error_code": None,
         "support_deep_link": None,
+        "notices": [],
+        "case": None,
+        "sources": [],
     }
     assert second.json()["answer"] == CLARIFICATION_TEXT
 
@@ -424,7 +431,7 @@ def test_web_chat_bare_menu_number_returns_domain_welcome_and_binds_session(
     )
 
     assert chosen.status_code == 200
-    assert chosen.json()["answer"].startswith("Este e o canal de privacidade")
+    assert chosen.json()["answer"].startswith("Este é o canal de privacidade")
     assert routed_web_client.answered_domains == ["lgpd-titular"]
     assert follow_up.status_code == 200
 
@@ -457,3 +464,56 @@ def test_public_chat_assets_do_not_contain_secret_strings() -> None:
         content = asset_file.read_text(encoding="utf-8")
         for forbidden in forbidden_strings:
             assert forbidden not in content, f"{forbidden} found in {asset_file.name}"
+
+
+def test_web_chat_returns_the_case_card_and_notices_when_a_case_is_queued(
+    monkeypatch: pytest.MonkeyPatch,
+    web_client: TestClient,
+) -> None:
+    from app.db.operational import ChatPersistenceResult
+
+    notice = "Segurança primeiro: ligue 193 (Corpo de Bombeiros)."
+
+    def fake_answer(self, domain, question, **kwargs) -> dict[str, object]:
+        return {
+            "request_id": kwargs.get("request_id") or "",
+            "domain": domain.name,
+            "answer": f"{notice}\n\nVou encaminhar para a equipe.",
+            "confidence": 0.4,
+            "escalated": True,
+            "handoff_reasons": ["risco_seguranca"],
+            "references": [
+                "domains/concessoes-manutencao/knowledge/faqs/risco-seguranca.md"
+            ],
+            "error_code": None,
+            "notices": [notice],
+        }
+
+    monkeypatch.setattr("app.orchestration.chat_flow.ChatFlowService.answer", fake_answer)
+    monkeypatch.setattr(
+        "app.db.operational.OperationalRepository.record_chat",
+        lambda self, audit: ChatPersistenceResult(
+            handoff_status="handoff_queued", persistence_status="persisted", turn_id="t-1"
+        ),
+    )
+
+    response = web_client.post(
+        "/web/chat",
+        headers={REQUEST_ID_HEADER: "7da038c9-0000-0000-0000-000000000000"},
+        json={"message": "Tem um fio exposto no abrigo ABR-1104"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["notices"] == [notice]
+    assert payload["answer"].startswith(notice)
+    assert payload["case"]["protocol"] == "7DA0-38C9"
+    assert payload["case"]["priority_label"] == "Urgente"
+    assert payload["case"]["deadline_label"] == "até 4 horas"
+    assert payload["case"]["status"] == "registrado"
+    assert payload["sources"] == [
+        {
+            "title": "Risco a pessoas: fio exposto, vidro quebrado, estrutura solta",
+            "kind": "Pergunta frequente",
+        }
+    ]

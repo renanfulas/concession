@@ -1,4 +1,4 @@
-# Tela ou relogio apagado
+# Tela ou relógio apagado
 
 Uma tela apagada, preta, travada ou piscando, ou um relogio digital sem imagem, entra no item 3.2 do Anexo de Niveis de Servico (demo): prazo de 24 horas para voltar a funcionar ou ter o modulo substituido.
 

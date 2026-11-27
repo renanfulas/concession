@@ -61,11 +61,11 @@ response:
   max_context_chunks: 5
   max_answer_length: short
   welcome_message: |-
-    Este e o canal de manutencao do mobiliario urbano (relogios de rua, abrigos de onibus e paineis digitais). Ambiente de demonstracao.
+    Este é o canal de manutenção do mobiliário urbano (relógios de rua, abrigos de ônibus e painéis digitais). Ambiente de demonstração.
 
-    Para registrar um defeito, me diga o codigo do equipamento (fica na etiqueta ou no QR code) e o endereco ou um ponto de referencia.
-  no_context_message: Nao encontrei essa informacao na base de manutencao. Vou encaminhar para a equipe de operacao, que confirma o prazo e o proximo passo.
-  provider_error_message: Nao consegui gerar uma resposta automatica agora. Vou encaminhar seu pedido para a equipe de manutencao pelo atendimento humano.
+    Para registrar um defeito, me diga o código do equipamento (fica na etiqueta ou no QR code) e o endereço ou um ponto de referência.
+  no_context_message: Não encontrei essa informação na base de manutenção. Vou encaminhar para a equipe de operação, que confirma o prazo e o próximo passo.
+  provider_error_message: Não consegui gerar uma resposta automática agora. Vou encaminhar seu pedido para a equipe de manutenção pelo atendimento humano.
 
 handoff:
   confidence_threshold: 0.55
@@ -95,7 +95,7 @@ handoff:
     - reason: risco_seguranca
       priority: urgent
       # Texto fixo, mostrado antes de qualquer resposta (inclusive sem LLM).
-      notice: "Seguranca primeiro: mantenha distancia do equipamento e nao toque em fios, vidro ou estrutura solta. Se houver risco imediato (fogo, faisca, fumaca ou alguem ferido), ligue 193 (Corpo de Bombeiros)."
+      notice: "Segurança primeiro: mantenha distância do equipamento e não toque em fios, vidro ou estrutura solta. Se houver risco imediato (fogo, faísca, fumaça ou alguém ferido), ligue 193 (Corpo de Bombeiros)."
       terms:
         - fio exposto
         - fiacao exposta
@@ -129,7 +129,7 @@ handoff:
     - reason: notificacao_fiscalizacao
       priority: high
       # Prazo fixo: no eval com LLM real o modelo omitia as 24 horas.
-      notice: "Notificacao da fiscalizacao vai para a equipe de contrato, que responde em ate 24 horas (item 3.5 do anexo de niveis de servico, demo). Este canal nao informa valor de multa."
+      notice: "A notificação da fiscalização vai para a equipe de contrato, que responde em até 24 horas (item 3.5 do anexo de níveis de serviço, demo). Este canal não informa valor de multa."
       terms:
         - fiscalizacao
         - fiscal da prefeitura
@@ -215,7 +215,7 @@ handoff:
 # contrato real antes de qualquer uso operacional. Ver
 # knowledge/articles/anexo-niveis-de-servico.md.
 sla:
-  basis: "Anexo de Niveis de Servico (demo), item 3: prazos ficticios para demonstracao"
+  basis: "Anexo de Níveis de Serviço (demo), item 3: prazos fictícios para demonstração"
   urgent_minutes: 240     # 4h   - risco a pessoas (item 3.1)
   high_minutes: 1440      # 24h  - tela inoperante / fiscalizacao (itens 3.2 e 3.5)
   normal_minutes: 2880    # 48h  - informacao incorreta / demais defeitos (item 3.3)
