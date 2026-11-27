@@ -1,11 +1,9 @@
 import logging
-import re
 import time
 from time import perf_counter
 
 from app.core.errors import ProviderError, RetrievalError
-from app.core.persistence_sanitize import contains_card_number, sanitize_for_persistence
-from app.core.text import fold
+from app.core.persistence_sanitize import sanitize_for_persistence
 from app.domain_engine.models import DomainConfig
 from app.handoff.service import HandoffService
 from app.llm.service import LLMService
@@ -181,32 +179,6 @@ class ChatFlowService:
         provider_failure_kind = None
         chunks = []
 
-        checkout_answer = self._maybe_checkout_answer(
-            domain,
-            question,
-            session_id=session_id,
-            request_id=request_id,
-            channel=channel,
-            customer_id=customer_id,
-        )
-        if checkout_answer is not None:
-            return {
-                "request_id": request_id or "",
-                "domain": domain.name,
-                "answer": checkout_answer,
-                "confidence": 1.0,
-                "escalated": False,
-                "handoff_reasons": [],
-                "references": [],
-                "error_code": None,
-                "provider_failure_kind": None,
-                "observability": self._build_observability(
-                    total_started_at=total_started_at,
-                    retrieval_ms=retrieval_ms,
-                    llm_ms=llm_ms,
-                ),
-            }
-
         pre_handoff_reasons = self.handoff_service.inspect_question(domain, question)
         # Detection above needs the raw text (card, CPF, secrets). Everything that
         # leaves the process -- embedding query and LLM prompt -- gets the masked
@@ -370,102 +342,6 @@ class ChatFlowService:
             customer_id=customer_id,
         )
 
-    def _maybe_checkout_answer(
-        self,
-        domain: DomainConfig,
-        question: str,
-        *,
-        session_id: str | None = None,
-        request_id: str | None = None,
-        channel: str = "api",
-        customer_id: str | None = None,
-    ) -> str | None:
-        """Return a deterministic payment-link reply when the lead is paying.
-
-        Fires only when the domain enables checkout and the message shows payment
-        intent. Yields to the normal safety path when a decline phrase (asking the
-        bot to store a card number, requesting a human, etc.) is present, so
-        escalation/refusal behavior is unchanged for those cases. The reply restates
-        the value the bot last quoted (``{value}``) for anchoring, then the link, and
-        never includes the inbound message, so card data is not echoed.
-        """
-        checkout = getattr(domain, "checkout", None)
-        if checkout is None or not checkout.enabled or not checkout.payment_link:
-            return None
-
-        # Never generate a payment link when the lead pasted a card number.
-        # Yield to the safety/handoff path so the card_data block fires and the
-        # data is never echoed back.
-        if contains_card_number(question):
-            return None
-
-        text = fold(question).strip()
-        if not text:
-            return None
-
-        declines = [
-            *checkout.decline_phrases,
-            *domain.handoff.explicit_human_phrases,
-        ]
-        if any(fold(phrase).strip() in text for phrase in declines if phrase.strip()):
-            return None
-
-        if not any(
-            fold(phrase).strip() in text for phrase in checkout.intent_phrases if phrase.strip()
-        ):
-            return None
-
-        value = self._checkout_value_recap(
-            domain=domain,
-            session_id=session_id,
-            request_id=request_id,
-            channel=channel,
-            customer_id=customer_id,
-        )
-        return self._render_checkout_message(checkout.message, checkout.payment_link, value)
-
-    def _checkout_value_recap(
-        self,
-        *,
-        domain: DomainConfig,
-        session_id: str | None,
-        request_id: str | None,
-        channel: str,
-        customer_id: str | None,
-    ) -> str:
-        """Best-effort recap of the last value the bot quoted this conversation.
-
-        Reads the most recent assistant turn and keeps the lines that mention a
-        price (``R$``). Returns an empty string when there is no history (e.g.
-        persistence disabled), so the caller drops the value line gracefully.
-        """
-        history = self._build_history(
-            domain=domain,
-            session_id=session_id,
-            request_id=request_id,
-            channel=channel,
-            customer_id=customer_id,
-        )
-        for message in reversed(history):
-            if message.get("role") != "assistant":
-                continue
-            content = message.get("content") or ""
-            priced = [line.strip() for line in content.splitlines() if "R$" in line]
-            if priced:
-                return " ".join(priced[:2])[:400]
-        return ""
-
-    @staticmethod
-    def _render_checkout_message(template: str, link: str, value: str) -> str:
-        text = template.replace("{link}", link)
-        if value:
-            text = text.replace("{value}", value)
-        else:
-            text = "\n".join(
-                line for line in text.splitlines() if line.strip() != "{value}"
-            ).replace("{value}", "")
-        return re.sub(r"\n{3,}", "\n\n", text).strip()
-
     def _should_block_automated_response(self, reasons: list[str]) -> bool:
         return any(reason in self.BLOCKING_REASONS for reason in reasons)
 
@@ -477,7 +353,7 @@ class ChatFlowService:
         if "card_data" in reasons:
             return (
                 "Por segurança, não envie dados de cartão por aqui. "
-                "O pagamento é concluído em ambiente seguro com um especialista. "
+                "Este canal nunca pede número de cartão. "
                 "Vou encaminhar você para o atendimento humano."
             )
 

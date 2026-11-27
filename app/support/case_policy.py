@@ -1,7 +1,7 @@
 """SLA policy frozen into a support case when it opens (migration 020).
 
 Lives in the support layer so every channel that opens a case (web, WhatsApp,
-Zoom, Hermes, the demo seed) gets the same policy through
+Hermes, the demo seed) gets the same policy through
 ``OperationalRepository``, with no caller able to forget it.
 """
 

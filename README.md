@@ -81,6 +81,15 @@ novo no nucleo.
 - **Evals que cobrem a classificacao** (35 casos base: 20 manutencao, 15
   LGPD, com casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
   `risco_seguranca`, e nao so que nada inesperado apareca.
+- **Intake e inventario de solucoes de IA (`/team/intake`)**: a unidade de
+  negocio submete uma iniciativa de IA; regras fixas calculam a criticidade
+  (dado sensivel ou imagem, decisao automatizada, dado fora do Brasil, uso
+  externo) e o prazo da analise, gravado na submissao. O revisor trabalha
+  numa fila por prazo, com separacao de funcoes (quem submete nao analisa),
+  RIPD exigido para aprovar nivel alto e decisao auditada. Sai um inventario
+  CSV e uma ficha por solucao no formato da ficha deste sistema. Politica e
+  prazos sao demo (`governance/ai-intake.yaml`); desenho em
+  [docs/architecture/ai-intake.md](docs/architecture/ai-intake.md).
 - **Relatorio mensal para a fiscalizacao**: CSV com um caso por linha, o
   prazo gravado na abertura (editar o `domain.yaml` depois nao reescreve
   casos abertos), o resultado contra o prazo e o motivo do atraso, que e
@@ -108,9 +117,9 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 1134 passam, 47 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
-| Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
-| Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
+| Testes automatizados (`python -m pytest`) | 1336 passam, 55 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
+| Evals `concessoes-manutencao` (base + confinamento) | 37/37, com 7 casos negativos de precisao |
+| Evals `lgpd-titular` (base + confinamento) | 31/31, com 4 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
 | Gravacao da prioridade no ticket contra PostgreSQL real | verificada: `tests/integration/test_demo_seed_console_postgres.py` grava pelo `record_chat` e le pela API do console, no job `postgres` do Phase 0 Gates |
 | Tela web do console (`/team`) | somente leitura: fila, semaforo e filtros; assumir/fechar seguem pela API |
@@ -302,6 +311,15 @@ translated.
 - **Evals that cover classification** (35 base cases: 20 maintenance, 15
   LGPD, including negative cases): `required_handoff_reasons` requires "exposed
   wire" to raise `risco_seguranca`, not just that nothing unexpected shows up.
+- **AI solution intake and inventory (`/team/intake`)**: a business unit
+  submits an AI initiative; fixed rules set its criticality (sensitive data or
+  images of people, automated decisions, data hosted outside Brazil, public
+  use) and the review deadline, frozen at submission. Reviewers work a queue
+  ordered by deadline, with separation of duties (the submitter never
+  reviews), a DPIA reference required to approve high criticality and an
+  audited decision. It exports an inventory CSV and one card per solution in
+  the format of this system's own system card. Policy and deadlines are demo
+  values (`governance/ai-intake.yaml`).
 - **Monthly report for the auditor**: a CSV with one case per row, the
   deadline frozen at opening (editing `domain.yaml` later never rewrites an
   open case), the outcome against the deadline and the late reason, which is
@@ -325,11 +343,11 @@ translated.
 
 ### Status and limits
 
-The status table above applies as is. In short: 1134 tests pass. The 47
+The status table above applies as is. In short: 1336 tests pass. The 55
 PostgreSQL integration tests are skipped locally and run against a real
 database in the `postgres` job of Phase 0 Gates, including priority
 persistence from `record_chat` to the console API. The domain evals pass
-(30/30 maintenance, 29/29 data subject, 20/20 reference domain). They run
+(37/37 maintenance, 31/31 data subject, 20/20 reference domain). They run
 without an LLM key, so they check retrieval, returned sources (`references`),
 classification and escalation, not the quality of model-generated text.
 

@@ -21,11 +21,6 @@ class Settings(BaseSettings):
     domains_path: Path = Field(default=Path("domains"), alias="DOMAINS_PATH")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
-    recall_api_key: str | None = Field(default=None, alias="RECALL_API_KEY")
-    zoom_webhook_secret: str | None = Field(
-        default=None,
-        alias="ZOOM_WEBHOOK_SECRET",
-    )
     database_url: str | None = Field(default=None, alias="DATABASE_URL")
     retrieval_backend: str = Field(default="lexical", alias="RETRIEVAL_BACKEND")
     persistence_backend: str = Field(default="disabled", alias="PERSISTENCE_BACKEND")
@@ -186,6 +181,14 @@ class Settings(BaseSettings):
     enable_support_console: bool = Field(
         default=False,
         alias="ENABLE_SUPPORT_CONSOLE",
+    )
+    # Intake e inventario de solucoes de IA (/web/support/intake, tela
+    # /team/intake). Vive dentro do console: usa a mesma sessao staff e so sobe
+    # com ENABLE_SUPPORT_CONSOLE. Ligado por padrao em desenvolvimento.
+    enable_ai_intake: bool | None = Field(default=None, alias="ENABLE_AI_INTAKE")
+    ai_intake_policy_path: Path = Field(
+        default=Path("governance") / "ai-intake.yaml",
+        alias="AI_INTAKE_POLICY_PATH",
     )
     support_console_timezone: str = Field(
         default="America/Sao_Paulo",
@@ -454,6 +457,8 @@ class Settings(BaseSettings):
             self.web_chat_cookie_secure = app_env not in DEV_ENVS
         if self.enable_team_ui is None:
             self.enable_team_ui = app_env in DEV_ENVS
+        if self.enable_ai_intake is None:
+            self.enable_ai_intake = app_env in DEV_ENVS
         if self.enable_team_dev_login and (
             "app_env" not in self.model_fields_set or app_env != "development"
         ):

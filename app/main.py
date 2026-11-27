@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import (
+    ai_intake,
     chat,
     domains,
     feedback,
@@ -23,10 +24,11 @@ from app.api.routes import (
     web_chat,
     web_handoff,
     web_support,
-    zoom,
 )
+from app.ai_intake.service import create_ai_intake_service
 from app.core.config import DEV_ENVS, get_settings
 from app.core.logging import configure_logging, log_event
+from app.core.privacy import hash_sensitive_value
 from app.core.rate_limit import InMemoryRateLimiter, RateLimitExceeded
 from app.core.request_context import (
     REQUEST_ID_HEADER,
@@ -50,7 +52,7 @@ logger = logging.getLogger(__name__)
 CHAT_STATIC_DIR = Path(__file__).resolve().parent / "static" / "chat"
 TEAM_STATIC_DIR = Path(__file__).resolve().parent / "static" / "team"
 TEAM_UI_PATH_PREFIXES = ("/team-assets/",)
-TEAM_UI_PATHS = {"/team", "/team/"}
+TEAM_UI_PATHS = {"/team", "/team/", "/team/intake"}
 # A tela do time so carrega arquivos da propria origem e so conversa com a
 # propria API: nada de CDN, script inline, frame ou formulario para fora.
 TEAM_UI_SECURITY_HEADERS = {
@@ -125,6 +127,12 @@ def create_app() -> FastAPI:
         settings,
         application.state.database_runtime,
     )
+    # Intake de solucoes de IA: so existe dentro do console ligado.
+    application.state.ai_intake_service = (
+        create_ai_intake_service(settings, application.state.database_runtime)
+        if settings.enable_support_console and settings.enable_ai_intake
+        else None
+    )
 
     team_ui_enabled = bool(settings.enable_team_ui) and TEAM_STATIC_DIR.exists()
 
@@ -146,7 +154,7 @@ def create_app() -> FastAPI:
                     method=request.method,
                     path=request.url.path,
                     status_code=429,
-                    client_host=client_host,
+                    client_host_hash=hash_sensitive_value(client_host),
                     retry_after=exc.retry_after_seconds,
                 )
                 return JSONResponse(
@@ -181,7 +189,7 @@ def create_app() -> FastAPI:
                     method=request.method,
                     path=request.url.path,
                     status_code=429,
-                    client_host=client_host,
+                    client_host_hash=hash_sensitive_value(client_host),
                     retry_after=exc.retry_after_seconds,
                 )
                 return JSONResponse(
@@ -312,6 +320,12 @@ def create_app() -> FastAPI:
         def team_ui() -> FileResponse:
             return FileResponse(TEAM_STATIC_DIR / "index.html")
 
+        if settings.enable_ai_intake:
+
+            @application.get("/team/intake", include_in_schema=False)
+            def team_intake_ui() -> FileResponse:
+                return FileResponse(TEAM_STATIC_DIR / "intake.html")
+
     application.include_router(health.router)
     application.include_router(domains.router, prefix="/domains", tags=["domains"])
     application.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
@@ -330,7 +344,10 @@ def create_app() -> FastAPI:
         application.include_router(
             web_support.router, prefix="/web/support", tags=["web-support"]
         )
-    application.include_router(zoom.router, prefix="/zoom", tags=["zoom"])
+        if settings.enable_ai_intake:
+            application.include_router(
+                ai_intake.router, prefix="/web/support/intake", tags=["ai-intake"]
+            )
     application.include_router(
         meta_whatsapp.router,
         prefix="/integrations/meta/whatsapp",

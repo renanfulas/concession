@@ -9,7 +9,6 @@ import time
 from typing import Any
 
 from app.core.migration_checksum import (
-    canonical_migration_bytes,
     migration_checksum,
     migration_checksum_variants,
 )

@@ -36,7 +36,7 @@ e deterministico. A saida agrega metricas e nunca inclui o texto das perguntas
 | `retrieval_ms` | **Real** — cronometra `RetrievalService.retrieve` (lexical). |
 | `pipeline_overhead_ms` | **Real** — orquestracao completa com provider mock (retrieval + handoff + confidence + montagem do prompt). Nao inclui o round-trip do modelo. |
 | `avg_input_tokens_per_llm_call` | **Real** — tokeniza o prompt efetivamente montado por `build_prompt`. |
-| `llm_eligible_share` / `short_circuit_breakdown` | **Real** — fracao de casos que chega ao LLM x atalhos (checkout, bloqueio de seguranca, sem contexto). |
+| `llm_eligible_share` / `short_circuit_breakdown` | **Real** — fracao de casos que chega ao LLM x atalhos (bloqueio de seguranca, sem contexto). |
 | `output_tokens` | **Assumido** (default 220) — ou **medido** em modo `--live`. |
 | `cost_usd` | **Estimado** — tabela `MODEL_PRICES_USD_PER_1M` no script (referencia 2026-06; confirme a tabela vigente). |
 | `live_llm_ms` | **Real**, apenas em `--live` — round-trip do modelo. |
@@ -66,7 +66,7 @@ single-digit de milissegundos.
 2. **Uma unica chamada de LLM por request.** Sem agent loop, sem re-ranking por
    LLM, sem cadeia multi-step ([app/orchestration/chat_flow.py](../app/orchestration/chat_flow.py)).
 3. **Boa parte das requests nem chega ao modelo.** 6%-35% dos casos sao atalhos
-   de custo zero de LLM: checkout deterministico, bloqueio de seguranca
+   de custo zero de LLM: bloqueio de seguranca
    (`out_of_scope`, pedido de humano, prompt injection, pedido de segredo) e
    ausencia de contexto. `suporte-vps-whatsapp` e o mais defensivo (35% nao
    chamam o modelo), o que derruba o custo efetivo por request.

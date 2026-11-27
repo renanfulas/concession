@@ -1,4 +1,3 @@
-import requests
 import pytest
 
 from app.ingestion.github_loader import (

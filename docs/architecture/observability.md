@@ -48,7 +48,7 @@ Eventos atuais:
   motivos, erro, canal, `handoff_status`, `persistence_status`, reutilizacao de
   `request_id`, backend de retrieval, quantidade de referencias e tempos
   agregados do fluxo. Emitido por todos os canais que chamam o cerebro
-  (`/chat`, WhatsApp via Meta e via Hermes, e zoom); o canal web usa o evento
+  (`/chat` e WhatsApp via Meta e via Hermes); o canal web usa o evento
   equivalente `web_chat_completed`. Turnos de roteamento (saudacao,
   esclarecimento ou selecao, status `routing_menu`/`routing_selected`) que nao
   chamam o cerebro nao emitem `chat_completed`.

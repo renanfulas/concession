@@ -57,13 +57,14 @@ necessario ler toda a documentacao antes de contribuir.
 
 Antes de abrir PR ou compartilhar uma mudanca:
 
-1. Rode `python -m compileall app scripts`
-2. Rode `python -m pytest`
-3. Se adicionou comportamento novo, inclua testes em `tests/`
-4. Se mexeu em resposta, retrieval, prompt ou handoff, rode os evals do dominio afetado
-5. Atualize a documentacao quando mudar arquitetura, fluxo ou convencoes
+1. Rode `python -m ruff check app tests scripts`
+2. Rode `python -m compileall app tests scripts`
+3. Rode `python -m pytest`
+4. Se adicionou comportamento novo, inclua testes em `tests/`
+5. Se mexeu em resposta, retrieval, prompt ou handoff, rode os evals do dominio afetado
+6. Atualize a documentacao quando mudar arquitetura, fluxo ou convencoes
 
-A CI principal executa compilacao e testes em `ubuntu-latest` e
+A CI principal executa lint (ruff), compilacao e testes em `ubuntu-latest` e
 `windows-latest`. Linux protege compatibilidade com o runtime oficial; Windows
 protege o ambiente local usado pelo time. Uma mudanca precisa passar nos dois.
 

@@ -87,7 +87,9 @@ def test_build_from_env_rejects_unknown_backend() -> None:
 
 def test_build_from_env_redis_requires_url() -> None:
     # backend=redis with no SESSION_STATE_REDIS_URL -> ValueError before importing redis.
-    getenv = lambda k, d="": "redis" if k == "SESSION_STATE_BACKEND" else ""
+    def getenv(k: str, d: str = "") -> str:
+        return "redis" if k == "SESSION_STATE_BACKEND" else ""
+
     with pytest.raises(ValueError):
         build_session_state_store_from_env(getenv=getenv)
 
