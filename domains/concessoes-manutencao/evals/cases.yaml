@@ -170,6 +170,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # prazo fixo (notice), presente mesmo sem LLM
+        - 24 horas
       expected_references:
         - fiscalizacao-notificacao.md
       required_handoff_reasons:
@@ -226,7 +228,9 @@ cases:
         - provider_error
 
   # Casos negativos: o termo aparece, mas o sentido nao e o da regra. Provam que
-  # ignore_terms tira o falso positivo sem esconder o risco real.
+  # ignore_terms tira o falso positivo sem esconder o risco real. O motivo
+  # exigido garante que o defeito vira caso mesmo quando o LLM responde com
+  # confianca (no eval com LLM real, sem regra, ele nao entrava na fila).
   - id: negativo-sem-risco-nao-e-urgente
     category: precisao_classificacao
     question: O banco do abrigo ABR-1290 esta solto, mas sem risco, so balancando.
@@ -234,7 +238,10 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+      required_handoff_reasons:
+        - defeito_geral
       allowed_handoff_reasons:
+        - defeito_geral
         - low_confidence
         - out_of_scope
         - provider_error
@@ -262,7 +269,10 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+      required_handoff_reasons:
+        - cobranca_atendimento
       allowed_handoff_reasons:
+        - cobranca_atendimento
         - low_confidence
         - out_of_scope
         - provider_error

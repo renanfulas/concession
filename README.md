@@ -71,7 +71,9 @@ novo no nucleo.
   prioridade do ticket; quando varias regras casam, vale a maior.
 - **Orientacao de seguranca fixa**: `escalation_rules[].notice` poe um texto
   fixo antes de qualquer resposta, com ou sem LLM (risco a pessoas: afastar-se
-  e ligar 193; incidente de dados: o canal nunca pede senha).
+  e ligar 193; incidente de dados: triagem em 4 horas e o canal nunca pede
+  senha; notificacao da fiscalizacao: resposta em 24 horas, sem valor de
+  multa).
 - **Mascaramento de dados pessoais**: CPF com digito verificador, cartao
   (Luhn), e-mail, telefone e IP saem mascarados antes de persistir e antes de a
   pergunta ir ao provedor de LLM e de embeddings; datas ISO e protocolos com
@@ -269,8 +271,9 @@ translated.
   priority; when several rules match, the highest wins.
 - **Fixed safety guidance**: `escalation_rules[].notice` puts a fixed text
   before any answer, with or without an LLM (risk to people: step away and
-  call 193, the fire department; data incident: the channel never asks for a
-  password).
+  call 193, the fire department; data incident: triage within 4 hours and
+  the channel never asks for a password; auditor's notice: reply within 24
+  hours, no penalty amounts).
 - **Personal data masking**: CPF (Brazilian taxpayer ID) with check digits,
   card numbers (Luhn), e-mail, phone and IP are masked before persistence and
   before the question reaches the LLM and embeddings providers; ISO dates and

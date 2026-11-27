@@ -44,6 +44,8 @@ def domain() -> DomainConfig:
         ("O relogio REL-0423 esta com a tela apagada", "high", timedelta(hours=24)),
         ("Recebemos uma notificação da fiscalização", "high", timedelta(hours=24)),
         ("O relógio está com a hora errada", "normal", timedelta(hours=48)),
+        ("O banco do abrigo ABR-1290 está solto", "normal", timedelta(hours=48)),
+        ("Tem um fio solto no abrigo ABR-1104", "urgent", timedelta(hours=4)),
         ("Picharam o relogio da Praca da Se", "low", timedelta(days=5)),
     ],
 )
@@ -133,6 +135,37 @@ def test_security_reason_is_not_downgraded_by_a_low_rule(domain: DomainConfig) -
     assert "conservacao_limpeza" in reasons
     assert "sensitive_topic" in reasons
     assert resolve_case_priority(domain, reasons) == "normal"
+
+
+@pytest.mark.parametrize(
+    ("question", "reason"),
+    [
+        # Sem regra, com o LLM confiante, estes pedidos nao entravam na fila
+        # (eval com LLM real de 2026-11-27).
+        ("O banco do abrigo ABR-1290 esta solto, mas sem risco", "defeito_geral"),
+        ("O painel do abrigo esta amassado", "defeito_geral"),
+        ("O técnico está atrasado para consertar o relógio", "cobranca_atendimento"),
+        ("Abri o chamado ontem e ninguem veio", "cobranca_atendimento"),
+    ],
+)
+def test_defect_without_specific_rule_still_becomes_a_case(
+    domain: DomainConfig, question: str, reason: str
+) -> None:
+    reasons = HandoffService().inspect_question(domain, question)
+    assert reason in reasons
+    assert resolve_case_priority(domain, reasons) == "normal"
+
+
+def test_deadline_notices_state_the_deadline(domain: DomainConfig) -> None:
+    notices = {rule.reason: rule.notice for rule in domain.handoff.escalation_rules}
+    assert "24 horas" in (notices["notificacao_fiscalizacao"] or "")
+    assert "multa" in (notices["notificacao_fiscalizacao"] or "")
+
+    lgpd = DomainLoader(Path("domains")).load("lgpd-titular")
+    assert lgpd is not None
+    incident = next(r for r in lgpd.handoff.escalation_rules if r.reason == "incidente_dados")
+    assert "4 horas" in (incident.notice or "")
+    assert "15 dias" not in (incident.notice or "")
 
 
 def test_plain_low_rule_keeps_low(domain: DomainConfig) -> None:
