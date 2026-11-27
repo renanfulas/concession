@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="concession", alias="APP_NAME")
     app_env: str = Field(default="development", alias="APP_ENV")
     default_domain: str = Field(
-        default="suporte-vps-whatsapp",
+        default="concessoes-manutencao",
         alias="DEFAULT_DOMAIN",
     )
     domains_path: Path = Field(default=Path("domains"), alias="DOMAINS_PATH")
@@ -117,6 +117,10 @@ class Settings(BaseSettings):
         default=False,
         alias="ENABLE_PUBLIC_CHAT_UI",
     )
+    # Tela somente leitura do console (/team). Mesmo padrao da chat-ui:
+    # sem valor, liga em APP_ENV de desenvolvimento e fica desligada fora
+    # dele; true/false explicito vale em qualquer ambiente.
+    enable_team_ui: bool | None = Field(default=None, alias="ENABLE_TEAM_UI")
     web_chat_rate_limit_per_minute: int = Field(
         default=10,
         alias="WEB_CHAT_RATE_LIMIT_PER_MINUTE",
@@ -248,6 +252,13 @@ class Settings(BaseSettings):
     whatsapp_router_domains: str = Field(
         default="concessoes-manutencao,lgpd-titular",
         alias="WHATSAPP_ROUTER_DOMAINS",
+    )
+    # /web/chat routes by message across WHATSAPP_ROUTER_DOMAINS (same list and
+    # same router as WhatsApp). On by default so the demo reaches both domains
+    # without .env; false pins the web chat to DEFAULT_DOMAIN.
+    enable_web_domain_router: bool = Field(
+        default=True,
+        alias="ENABLE_WEB_DOMAIN_ROUTER",
     )
     meta_whatsapp_access_token: str | None = Field(
         default=None,
@@ -436,6 +447,8 @@ class Settings(BaseSettings):
         self.web_chat_session_cookie = self.web_chat_session_cookie.strip() or "sfaq_web_session"
         if self.web_chat_cookie_secure is None:
             self.web_chat_cookie_secure = app_env not in DEV_ENVS
+        if self.enable_team_ui is None:
+            self.enable_team_ui = app_env in DEV_ENVS
 
         if self.enable_public_chat_ui and app_env not in DEV_ENVS:
             if not self.web_chat_cookie_secure:

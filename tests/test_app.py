@@ -209,9 +209,9 @@ def test_chat_ui_is_available_in_development() -> None:
     response = client.get("/chat-ui")
 
     assert response.status_code == 200
-    assert "Suporte VPS & WhatsApp" in response.text
+    assert "Atendimento ao cidadão" in response.text
     assert "Perguntas rápidas" in response.text
-    assert "Descreva sua dúvida sobre VPS, WhatsApp ou automações com o máximo de" in response.text
+    assert "Ambiente de" in response.text and "demonstração" in response.text
     assert "devolvo um código para continuidade no suporte" in response.text
     assert "Escalonamento humano quando necessário" in response.text
 
@@ -250,7 +250,7 @@ def test_chat_ui_can_be_enabled_in_staging(monkeypatch) -> None:
     response = staging_client.get("/chat-ui")
 
     assert response.status_code == 200
-    assert "Suporte VPS & WhatsApp" in response.text
+    assert "Atendimento ao cidadão" in response.text
     get_settings.cache_clear()
 
 
@@ -289,7 +289,7 @@ def test_public_chat_ui_flag_enables_ui_in_production(monkeypatch) -> None:
     response = production_client.get("/chat-ui")
 
     assert response.status_code == 200
-    assert "Suporte VPS & WhatsApp" in response.text
+    assert "Atendimento ao cidadão" in response.text
     get_settings.cache_clear()
 
 

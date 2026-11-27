@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from app.core.config import Settings
 from app.core.errors import DatabaseUnavailableError
 from app.core.migration_checksum import migration_checksum_variants
 from app.db.runtime import DatabaseRuntime
@@ -11,7 +12,8 @@ from app.db.schema_contract import CONTRACT_MIGRATION, structural_drift
 
 
 MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "migrations"
-DEFAULT_DOMAIN = "suporte-vps-whatsapp"
+# Single source of truth: the Settings field default (``DEFAULT_DOMAIN``).
+DEFAULT_DOMAIN = str(Settings.model_fields["default_domain"].default)
 DEFAULT_PGVECTOR_MIN_DOMAIN_EMBEDDINGS = 1
 DEFAULT_OUTBOX_READY_DEGRADED_COUNT = 100
 DEFAULT_OUTBOX_OLDEST_READY_DEGRADED_SECONDS = 300

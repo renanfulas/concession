@@ -64,14 +64,87 @@ Executar na origem do backend (ou via proxy `/web/*`), guardando os
     `response_times` (`null` se ainda nao houver caso fechado/com acao na
     janela); `?window=7d` → `422 invalid_window`.
 
-## Smoke pela UI (`/team`, quando existir)
+## Seed de demonstracao (somente dev/test, banco local)
 
-A tela `/team` ainda nao existe nesta copia. Quando for construida,
-repetir os passos 2-11 pela interface: login com codigo de 6 celulas, botao
-"Entrar como <nome>" no segundo acesso, fila com semaforo e filtros, detalhe,
-"entrar com outro numero" e "esquecer este dispositivo", botoes de transicao
-com confirmacao, filtro "meus casos" e o painel de metricas com as quatro
-visoes.
+Para ver a fila com semaforo sem depender de trafego real, o script
+`scripts/seed_demo_cases.py` cria casos **ficticios** nos dois dominios da
+demo e um operador ficticio ativo (`Atendente Demo 1`, telefone da faixa
+ficticia `+55 11 90000-0001`). Ele mora fora de `migrations/` de proposito:
+nunca roda num deploy.
+
+```bash
+# Banco descartavel: docker compose -f docker-compose.test.yml up -d
+# (migrations aplicadas como na CI: --target 006, backfill, apply)
+APP_ENV=development \
+DATABASE_URL=postgresql://postgres:throwaway_test_password@127.0.0.1:55432/supportfaq_phase0 \
+IDENTITY_HASH_SECRET=<o mesmo valor do .env local do app> \
+python -m scripts.seed_demo_cases
+
+# Apagar somente o que o seed criou
+APP_ENV=development DATABASE_URL=... IDENTITY_HASH_SECRET=... \
+python -m scripts.seed_demo_cases --reset
+```
+
+- **Guardas**: recusa (saida `2`) sem `APP_ENV` explicito em `development` ou
+  `test`, e com host de banco que nao seja `localhost`, `127.0.0.1`, `::1`,
+  `postgres` ou `postgres_test`. A URL nunca e ecoada.
+- **O que cria**: 13 casos — `concessoes-manutencao` com `urgent`, `high`,
+  `normal` e `low`; `lgpd-titular` com `urgent`, `high` e `normal` (o dominio
+  nao declara regra `low`). Cada dominio tem pelo menos um caso vermelho,
+  amarelo, verde e pausado (`waiting_customer`). Resumos citam ativos do
+  inventario demo (`REL-`, `ABR-`, `PNL-`) e levam a marca `[demo]`.
+- **Mesmo caminho do app**: motivo por `HandoffService.inspect_question`,
+  prioridade por `resolve_case_priority`, caso por
+  `OperationalRepository.record_chat` (o INSERT de producao), dono e pausa
+  por `SupportCaseTransitionService`. So `opened_at` e ancorado direto no
+  relogio do banco (`now() - intervalo`), para a cor ficar estavel no momento
+  do seed; casos pausados congelam a cor de verdade. No fim o script confere
+  cada cor com `compute_sla` e falha se algo divergir (ex.: `domain.yaml`
+  mudou a prioridade de uma regra).
+- **Idempotente**: tudo leva `channel='demo-seed'` e `request_id` com prefixo
+  `demo-seed-`. Rodar de novo substitui os casos marcados pelos mesmos 13, com
+  o relogio re-ancorado; nunca duplica. Os `handoff.requested` que o
+  `record_chat` enfileira sao removidos na hora: nada sai para webhook ou
+  WhatsApp.
+- **`--reset`**: apaga eventos, casos, auditorias e outbox marcados; o
+  operador ficticio e apagado (ou desativado, se ja agiu em caso fora do
+  seed). Sem `IDENTITY_HASH_SECRET` o operador fica.
+- **Login no console**: com `ENABLE_SUPPORT_CONSOLE=true` e
+  `WEB_AUTH_OTP_DELIVERY_TRANSPORT=memory`, o OTP do `+5511900000001` fica no
+  adapter em memoria (nao sai mensagem). Prova automatizada:
+  `tests/integration/test_demo_seed_console_postgres.py`.
+
+## Smoke pela UI (`/team`, somente leitura)
+
+Como abrir:
+
+1. `ENABLE_TEAM_UI` vazio liga a tela em `APP_ENV=development`; fora de
+   desenvolvimento, `ENABLE_TEAM_UI=true`. `ENABLE_TEAM_UI=false` devolve
+   `404` em `/team` e `/team-assets/*`.
+2. Para ver dados, a API do console precisa estar ligada
+   (`ENABLE_SUPPORT_CONSOLE=true`, com os pre-requisitos acima). Sem ela, ou
+   sem banco, a tela mostra "Console indisponivel" e o botao "Tentar de novo".
+3. `uvicorn app.main:app --reload` e abrir `http://127.0.0.1:8000/team`.
+
+O que conferir (passos 2-7 pela interface):
+
+- faixa "Ambiente de demonstracao" no topo;
+- login: telefone -> "Receber codigo" -> codigo -> "Entrar"; codigo errado
+  mostra "Codigo invalido ou expirado"; no segundo acesso aparece
+  "Entrar como <nome>" e "Entrar com outro numero"; "Sair" encerra a sessao;
+- fila em ordem de atencao com semaforo em texto (Vermelho · estourado,
+  Amarelo · atencao, Verde · no prazo, Pausado), prioridade, dominio pelo nome
+  de exibicao, prazo no fuso America/Sao_Paulo, tempo restante ou estourado,
+  base do prazo (`sla.basis`, ou "SLA padrao do console"), status, responsavel
+  e referencia curta do caso; "Detalhes" abre explicacao do prazo, datas,
+  canal, motivos e o resumo ja mascarado;
+- filtros de dominio e semaforo usam `domain` e `color` da API;
+- "Atualizado as HH:MM" muda a cada 60 s.
+
+A tela nao tem acoes de escrita: assumir, pausar, retomar e fechar (passos
+9-10) e as metricas (passo 11) continuam pela API. Cabecalhos: CSP
+`default-src 'none'` com `script-src 'self'` e `connect-src 'self'`,
+`X-Frame-Options: DENY`, `nosniff`, `no-referrer`, `no-store`.
 
 ## Promocao a producao
 

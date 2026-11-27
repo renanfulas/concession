@@ -86,6 +86,16 @@ class ConsoleCaseListResponse(BaseModel):
     cases: list[ConsoleCaseSummaryResponse] = Field(default_factory=list)
 
 
+class ConsoleDomainResponse(BaseModel):
+    name: str
+    display_name: str
+
+
+class ConsoleDomainListResponse(BaseModel):
+    request_id: str | None = None
+    domains: list[ConsoleDomainResponse] = Field(default_factory=list)
+
+
 class ConsoleCaseEventResponse(BaseModel):
     action: str
     from_status: str

@@ -87,11 +87,15 @@ Docs-only changes usually do not need new unit tests, but still run the default 
 
 ## Commit
 
+Commit, push and merge only when a person asks explicitly (`CLAUDE.md`,
+regra 1). One commit, one intention (regra 7).
+
 Commit message style:
 
 - Use imperative mood.
 - Keep it short and specific.
 - Mention the intent, not every file.
+- When an agent made the commit, end with its `Co-Authored-By:` trailer.
 
 Examples:
 
@@ -144,9 +148,13 @@ Resumo curto da entrega e por que ela existe.
 - `python -m app.evals.run_domain_eval concessoes-manutencao` e `python -m app.evals.run_domain_eval lgpd-titular` quando aplicavel
 ```
 
-Do not append "🤖 Generated with Claude Code" or any `Co-Authored-By` AI
-attribution line to the PR description or commit message. Keep the PR body
-scoped to the template above.
+Attribution follows `CLAUDE.md` (regra 2, rastreabilidade):
+
+- **Commit made with an agent:** end the message with the agent's
+  `Co-Authored-By:` trailer. This is required, not optional.
+- **PR description:** do not append "🤖 Generated with Claude Code" or any
+  other footer. Keep the PR body scoped to the template above; the commits
+  already carry the attribution.
 
 For README, docs, or PR narrative changes, include the product or operational impact and avoid promises that conflict with `docs/product-positioning.md`.
 

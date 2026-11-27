@@ -52,7 +52,7 @@ def test_persistence_sanitizer_redacts_mixed_sensitive_data() -> None:
     assert "token-value-123" not in sanitized
     assert "user:pass" not in sanitized
     assert "token=secret" not in sanitized
-    assert REDACTION_VERSION == "phase0-v1"
+    assert REDACTION_VERSION == "phase0-v2"
 
 
 def test_persistence_sanitizer_preserves_non_sensitive_support_text() -> None:

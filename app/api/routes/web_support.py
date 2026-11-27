@@ -32,6 +32,8 @@ from app.api.schemas.web_support import (
     ConsoleCaseMessageRequest,
     ConsoleCaseMessageResponse,
     ConsoleCaseSummaryResponse,
+    ConsoleDomainListResponse,
+    ConsoleDomainResponse,
     ConsoleMetricsResponse,
     ConsoleSlaResponse,
     StaffLoginResponse,
@@ -68,10 +70,10 @@ from app.support.sla import (
     COLOR_FILTERS,
     DomainSla,
     SlaAssessment,
-    attention_sort_key,
     compute_sla,
     domain_sla_overrides,
     matches_color_filter,
+    sort_by_attention,
 )
 from app.support.staff_auth import (
     StaffConsoleAuthService,
@@ -327,6 +329,28 @@ def logout_staff_session(
     return StaffLogoutResponse()
 
 
+@router.get("/domains", response_model=ConsoleDomainListResponse)
+def list_console_domains(
+    request: Request,
+    principal: StaffPrincipal = Depends(require_staff_session),
+) -> ConsoleDomainListResponse:
+    """Nome de exibicao de cada dominio carregado, para rotulos e filtro da fila.
+
+    Somente leitura e sem banco: vem do ``domain.yaml`` de cada dominio.
+    """
+
+    loader = DomainLoader(request.app.state.settings.domains_path)
+    domains = [
+        ConsoleDomainResponse(name=config.name, display_name=config.display_name)
+        for config in (loader.load(name) for name in loader.list_domains())
+        if config is not None
+    ]
+    return ConsoleDomainListResponse(
+        request_id=get_request_id(request),
+        domains=domains,
+    )
+
+
 @router.get("/cases", response_model=ConsoleCaseListResponse)
 def list_console_cases(
     request: Request,
@@ -398,13 +422,7 @@ def list_console_cases(
                     item for item in assessed if matches_color_filter(item[1], color)
                 ]
             if sort == "attention":
-                assessed.sort(
-                    key=lambda item: attention_sort_key(
-                        priority=item[0].priority,
-                        opened_at=item[0].opened_at,
-                        sla=item[1],
-                    ),
-                )
+                assessed = sort_by_attention(assessed)
             page = assessed[offset : offset + limit]
             cases = [
                 ConsoleCaseSummaryResponse(

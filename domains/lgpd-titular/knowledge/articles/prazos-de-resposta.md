@@ -9,7 +9,9 @@ Pelo art. 19 da LGPD, a confirmacao de existencia ou o acesso aos dados pessoais
 - em formato simplificado, imediatamente; ou
 - por meio de declaracao clara e completa, em ate **15 dias** contados da data do requerimento do titular (art. 19, II).
 
-Neste canal, todo pedido do titular abre um caso para o encarregado com o prazo de 15 dias no painel de acompanhamento.
+Para correcao, eliminacao, anonimizacao, portabilidade e os demais direitos do art. 18, o prazo legal segue o que for previsto em regulamento (art. 18, §5º); a LGPD nao fixa 15 dias para esses pedidos.
+
+Neste canal, todo pedido do titular abre um caso para o encarregado com o prazo de 15 dias no painel de acompanhamento. Para acesso e confirmacao, esse e o prazo legal; para os demais pedidos, e uma meta interna desta demonstracao.
 
 ## Metas internas (demonstracao)
 
