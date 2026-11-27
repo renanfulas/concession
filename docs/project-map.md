@@ -28,6 +28,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | SLA por dominio (`sla:` no `domain.yaml`) | ✅ | override por prioridade, `basis` na resposta do console, lista, detalhe e metricas | — | `tests/test_support_sla.py`, `tests/test_web_support_console.py` |
 | Prioridade do caso por regra | ✅ codigo · 🟡 banco | `escalation_rules[].priority`, `resolve_case_priority`, coluna `priority` no INSERT | rodar a suite de integracao PostgreSQL (`docker-compose.test.yml`) para provar o INSERT | `tests/test_concessoes_domain.py`; integracao nao rodada nesta copia |
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
+| Evals com LLM real (opt-in, nao e gate) | 🟡 | `--provider-mode real`, `--runs`, `--report`; falha com `provider_error`; bloco `llm_expectation` (`any_of`, `forbidden_terms`, `allowed_durations`, `expected_citation`) em 10 casos base; relatorio com modelo, temperatura, commit, pass@all e uso de tokens | rodar com chave real e preencher a tabela do README (nao executado ainda) | `tests/test_eval_real_mode.py` (providers falsos); gate deterministico inalterado |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |

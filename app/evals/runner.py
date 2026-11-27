@@ -1,7 +1,63 @@
 from app.core.text import fold
 from app.domain_engine.models import DomainConfig
-from app.evals.models import EvalCase, EvalCaseResult, EvalRunResult, EvalSuite
+from app.evals.models import (
+    EvalCase,
+    EvalCaseResult,
+    EvalExpectation,
+    EvalRunResult,
+    EvalSuite,
+)
 from app.orchestration.chat_flow import ChatFlowService
+
+
+def evaluate_expectation(
+    expectation: EvalExpectation,
+    response: dict,
+    *,
+    check_required_terms: bool = True,
+) -> list[str]:
+    """Apply the base ``expectation`` of a case to one chat-flow response.
+
+    Shared by the deterministic gate and the opt-in real-LLM mode. The real
+    mode passes ``check_required_terms=False`` when the model generated the
+    answer, because base ``required_terms`` were calibrated against the
+    deterministic fallback text.
+    """
+    answer = fold(str(response["answer"]))
+    references = [str(reference) for reference in response["references"]]
+    handoff_reasons = [str(reason) for reason in response["handoff_reasons"]]
+    failures: list[str] = []
+
+    if bool(response["escalated"]) != expectation.should_escalate:
+        failures.append("unexpected_escalation")
+
+    if check_required_terms:
+        for term in expectation.required_terms:
+            if fold(term) not in answer:
+                failures.append(f"missing_required_term:{term}")
+
+    for term in expectation.forbidden_terms:
+        if fold(term) in answer:
+            failures.append(f"forbidden_term_present:{term}")
+
+    for expected_reference in expectation.expected_references:
+        if not any(expected_reference in reference for reference in references):
+            failures.append(f"missing_reference:{expected_reference}")
+
+    if expectation.allowed_handoff_reasons:
+        unexpected_reasons = [
+            reason
+            for reason in handoff_reasons
+            if reason not in expectation.allowed_handoff_reasons
+        ]
+        for reason in unexpected_reasons:
+            failures.append(f"unexpected_handoff_reason:{reason}")
+
+    for reason in expectation.required_handoff_reasons:
+        if reason not in handoff_reasons:
+            failures.append(f"missing_handoff_reason:{reason}")
+
+    return failures
 
 
 class _StaticSummaryRecall:
@@ -42,38 +98,9 @@ class DomainEvalRunner:
 
     def _run_case(self, domain: DomainConfig, case: EvalCase) -> EvalCaseResult:
         response = self._answer_case(domain=domain, case=case)
-        answer = fold(str(response["answer"]))
         references = [str(reference) for reference in response["references"]]
         handoff_reasons = [str(reason) for reason in response["handoff_reasons"]]
-        failures: list[str] = []
-
-        if bool(response["escalated"]) != case.expectation.should_escalate:
-            failures.append("unexpected_escalation")
-
-        for term in case.expectation.required_terms:
-            if fold(term) not in answer:
-                failures.append(f"missing_required_term:{term}")
-
-        for term in case.expectation.forbidden_terms:
-            if fold(term) in answer:
-                failures.append(f"forbidden_term_present:{term}")
-
-        for expected_reference in case.expectation.expected_references:
-            if not any(expected_reference in reference for reference in references):
-                failures.append(f"missing_reference:{expected_reference}")
-
-        if case.expectation.allowed_handoff_reasons:
-            unexpected_reasons = [
-                reason
-                for reason in handoff_reasons
-                if reason not in case.expectation.allowed_handoff_reasons
-            ]
-            for reason in unexpected_reasons:
-                failures.append(f"unexpected_handoff_reason:{reason}")
-
-        for reason in case.expectation.required_handoff_reasons:
-            if reason not in handoff_reasons:
-                failures.append(f"missing_handoff_reason:{reason}")
+        failures = evaluate_expectation(case.expectation, response)
 
         return EvalCaseResult(
             case_id=case.id,

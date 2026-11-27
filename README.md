@@ -69,7 +69,7 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 949 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
+| Testes automatizados (`python -m pytest`) | 973 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
 | Evals `concessoes-manutencao` (base + confinamento) | 27/27 |
 | Evals `lgpd-titular` (base + confinamento) | 26/26 |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
@@ -80,6 +80,34 @@ novo no nucleo.
 Os evals rodam sem chave de LLM. Nesse modo, eles validam retrieval,
 referencias citadas, classificacao e escalonamento, mas nao a qualidade do
 texto gerado pelo modelo.
+
+### Evals com LLM real (opt-in, nao e gate): nao executado ainda
+
+O modo `--provider-mode real` mede o texto do modelo: falha com
+`provider_error`, cobra termos, prazos permitidos e citacao do item ou artigo,
+e repete cada caso `--runs` vezes. Comando e metricas em
+[docs/architecture/domain-evals.md](docs/architecture/domain-evals.md#modo-llm-real-opt-in-nao-e-gate).
+
+```bash
+python -m app.evals.run_domain_eval concessoes-manutencao lgpd-titular \
+  --provider-mode real --runs 3 --report reports/eval-real.json
+```
+
+Preencha com os numeros do relatorio depois de rodar. Ate la, nenhum
+resultado com LLM real foi medido.
+
+| Campo | Valor |
+| --- | --- |
+| Modelo (`model`) | nao executado ainda |
+| Data (`timestamp_utc`) | nao executado ainda |
+| Temperatura (`temperature`) | nao executado ainda |
+| Rodadas (`runs`) | nao executado ainda |
+| Commit (`git_commit`) | nao executado ainda |
+| `concessoes-manutencao` pass@all / taxa media | nao executado ainda |
+| `lgpd-titular` pass@all / taxa media | nao executado ainda |
+| Prazos alucinados (`allowed_durations` passed/total) | nao executado ainda |
+| Tokens (`usage.total_tokens`) | nao executado ainda |
+| Custo (calculado a parte; o relatorio nao estima) | nao executado ainda |
 
 ## Rodando localmente
 
