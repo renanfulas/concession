@@ -26,7 +26,10 @@ O unico ajuste direto e ``opened_at``, ancorado no relogio do banco
 
 Guardas: recusa rodar sem ``APP_ENV`` explicito em ``development`` ou ``test``
 e com host de banco que nao seja local (``localhost``, ``127.0.0.1``, ``::1``
-ou o servico ``postgres``/``postgres_test`` do compose/CI).
+ou o servico ``postgres``/``postgres_test`` do compose/CI). A unica excecao e a
+demo publica: com ``ENABLE_PUBLIC_DEMO_LOGIN=true`` no ambiente, o seed aceita
+qualquer ``APP_ENV``, mas o banco continua tendo de ser local
+(``docs/runbooks/public-demo.md``).
 
 Marca: tudo que o seed cria usa ``channel='demo-seed'`` e ``request_id`` com
 prefixo ``demo-seed-``. Rodar de novo substitui os casos do seed pelos mesmos
@@ -272,10 +275,21 @@ class SeededCase:
 # --------------------------------------------------------------------------- #
 
 
-def check_environment(app_env: str | None, database_url: str | None) -> None:
-    """Refuse anything that is not an explicit dev/test env on a local DB."""
+def check_environment(
+    app_env: str | None,
+    database_url: str | None,
+    *,
+    public_demo: bool = False,
+) -> None:
+    """Refuse anything that is not an explicit dev/test env on a local DB.
 
-    if app_env is None or app_env.strip().lower() not in ALLOWED_APP_ENVS:
+    ``public_demo`` (``ENABLE_PUBLIC_DEMO_LOGIN=true``) lifts only the
+    ``APP_ENV`` check, so the public demo can reseed its own database; the
+    database host must still be local.
+    """
+
+    env_ok = app_env is not None and app_env.strip().lower() in ALLOWED_APP_ENVS
+    if not env_ok and not public_demo:
         raise SeedRefused(
             "seed de demonstracao recusado: defina APP_ENV=development ou "
             "APP_ENV=test explicitamente"
@@ -353,8 +367,9 @@ def seed_demo_cases(
     identity_hash_secret: str,
     persistence_hash_secret: str | None = None,
     domains_path: Path = Path("domains"),
+    public_demo: bool = False,
 ) -> list[SeededCase]:
-    check_environment(app_env, database_url)
+    check_environment(app_env, database_url, public_demo=public_demo)
     if not identity_hash_secret:
         raise SeedRefused("IDENTITY_HASH_SECRET e obrigatorio para cadastrar o operador")
 
@@ -438,8 +453,9 @@ def reset_demo_cases(
     *,
     app_env: str | None,
     identity_hash_secret: str | None,
+    public_demo: bool = False,
 ) -> dict[str, int | str]:
-    check_environment(app_env, database_url)
+    check_environment(app_env, database_url, public_demo=public_demo)
     runtime = DatabaseRuntime(_runtime_settings(database_url, None))
     runtime.open()
     try:
@@ -672,12 +688,14 @@ def main(argv: list[str] | None = None) -> int:
     app_env = os.environ.get("APP_ENV")
     database_url = os.environ.get("DATABASE_URL")
     identity_hash_secret = os.environ.get("IDENTITY_HASH_SECRET")
+    public_demo = os.environ.get("ENABLE_PUBLIC_DEMO_LOGIN", "").strip().lower() == "true"
     try:
         if args.reset:
             counts = reset_demo_cases(
                 database_url or "",
                 app_env=app_env,
                 identity_hash_secret=identity_hash_secret,
+                public_demo=public_demo,
             )
             print("reset do seed de demonstracao:")
             for name, value in counts.items():
@@ -689,6 +707,7 @@ def main(argv: list[str] | None = None) -> int:
             identity_hash_secret=identity_hash_secret or "",
             persistence_hash_secret=os.environ.get("PERSISTENCE_HASH_SECRET"),
             domains_path=Path(os.environ.get("DOMAINS_PATH", "domains")),
+            public_demo=public_demo,
         )
     except SeedRefused as exc:
         print(str(exc), file=sys.stderr)

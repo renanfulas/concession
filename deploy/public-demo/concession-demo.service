@@ -1,0 +1,44 @@
+# Demo publica do concession (FastAPI atras do Caddy).
+# Instalar em /etc/systemd/system/concession-demo.service.
+# Runbook: docs/runbooks/public-demo.md
+[Unit]
+Description=concession public demo (FastAPI)
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=concession-demo
+Group=concession-demo
+WorkingDirectory=/opt/concession-demo/current
+EnvironmentFile=/etc/concession-demo/demo.env
+# Um worker so: o rate limit do chat e em memoria. --proxy-headers faz o IP
+# real do visitante (X-Forwarded-For do Caddy local) valer para o rate limit.
+ExecStart=/opt/concession-demo/current/.venv/bin/uvicorn app.main:app --app-dir /opt/concession-demo/current --host 127.0.0.1 --port 8095 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-server-header
+Restart=on-failure
+RestartSec=5
+MemoryMax=1G
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,27 @@
+# Trecho para /etc/caddy/Caddyfile. Antes de aplicar: backup datado em
+# /etc/caddy/backups/, `caddy validate` e reload so se for valido.
+# Runbook: docs/runbooks/public-demo.md
+concession.renanfulas.com.br {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	@root path /
+	redir @root /chat-ui/ 302
+
+	# So as telas e as rotas que elas usam. /chat, /domains, /ingestion,
+	# /internal, /integrations e a documentacao OpenAPI ficam fora.
+	@app path /health /chat-ui /chat-ui/ /chat-assets/* /team /team/ /team/intake /team-assets/* /web/*
+	handle @app {
+		reverse_proxy 127.0.0.1:8095
+	}
+	handle {
+		respond "Not Found" 404
+	}
+}

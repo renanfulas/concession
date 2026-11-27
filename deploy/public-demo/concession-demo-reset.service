@@ -1,0 +1,10 @@
+# Recria o banco da demo publica e roda o seed ficticio.
+# Instalar em /etc/systemd/system/concession-demo-reset.service (disparado pelo timer).
+[Unit]
+Description=Reset the concession public demo database
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/concession-demo/bin/reset-demo.sh

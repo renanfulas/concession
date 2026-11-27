@@ -53,6 +53,17 @@ def test_accepts_local_dev_and_test(host: str, app_env: str) -> None:
     check_environment(app_env, f"postgresql://postgres:pw@{host}:5432/supportfaq_phase0")
 
 
+@pytest.mark.parametrize("app_env", [None, "production"])
+def test_public_demo_lifts_only_the_app_env_check(app_env) -> None:
+    check_environment(app_env, LOCAL_URL, public_demo=True)
+    with pytest.raises(SeedRefused):
+        check_environment(
+            app_env,
+            "postgresql://postgres:pw@db.example.test:5432/supportfaq_phase0",
+            public_demo=True,
+        )
+
+
 def test_cli_refuses_before_touching_database(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
