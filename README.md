@@ -9,6 +9,14 @@ com o prazo da LGPD e coloca os dois na mesma fila auditada do time.
 > arquivo. Nao representam nenhuma empresa real. O nucleo vem do
 > `supportFAQagent`, um agente de suporte que ja operou em staging real.
 
+![Demo de 55 segundos: cidadao relata fio exposto e recebe a orientacao fixa de seguranca; outro pede exclusao dos dados e cai no canal de privacidade; a fila do time mostra os dois dominios ordenados pelo prazo de cada caso](docs/assets/demo-concession.gif)
+
+*Demo de 55 s gravada localmente, sem chave de LLM, com o banco descartavel
+(`docker-compose.test.yml`) e o seed de casos ficticios
+(`scripts/seed_demo_cases.py`). Sem LLM, a resposta automatica e o fallback
+seguro; a orientacao de seguranca, a classificacao, a prioridade e o prazo nao
+dependem do modelo.*
+
 ## O problema
 
 Uma concessao de mobiliario urbano vive de prazos que nao sao do time:
