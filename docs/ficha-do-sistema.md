@@ -60,6 +60,8 @@ Nao faz:
 | Telefone de destino (cidadao e membros do time) | campo `to` do `operational_outbox.payload_sanitized` (`app/support/whatsapp_bridge.py:243-252`; `app/db/operational.py:556-558`) | gravado **em claro**, apesar do nome da coluna, para o dispatcher entregar a mensagem; nao ha rotina de purga do outbox no codigo | idem (cidadao); legitimo interesse (art. 7, IX) para o telefone do time |
 | Telefone E.164 do operador do time | cookie HttpOnly de lembrete `<token>.<E.164>` no navegador do operador (`app/support/staff_auth.py:14-19`, `:118`) | o banco guarda so o HMAC do token; o telefone fica em claro no cookie do proprio operador | legitimo interesse (art. 7, IX): gestao de acesso do time |
 | Endereco IP do cliente | log `rate_limit_exceeded` (`app/main.py`, middleware de `/chat` e `/web/chat`) | so o HMAC SHA-256 truncado (`client_host_hash`, chave `PERSISTENCE_HASH_SECRET`); o IP em claro nao vai para o log | legitimo interesse (art. 7, IX): seguranca do canal; a confirmar |
+| Nome e papel do responsavel por uma solucao de IA | `ai_solutions.owner_name` e `owner_role` (migration 021, intake de solucoes de IA) | dado de funcionario, informado por quem submete; sem e-mail, telefone ou documento; aparece na ficha e no inventario CSV, que exigem sessao staff | legitimo interesse (art. 7, IX): governanca do uso de IA; a confirmar |
+| Texto livre do intake (finalidade, notas, condicoes) | `ai_solutions`, `ai_solution_events.note_sanitized` | mascarado por `sanitize_for_persistence` antes de gravar; fora dos logs | idem |
 | Codigo do ativo e endereco | ticket de manutencao | dado operacional, nao pessoal | — |
 
 Dados sensiveis (art. 11): nao sao coletados. Dados de criancas: nao sao coletados de proposito.
@@ -99,6 +101,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Consentimento antes de contato direto | gate de consentimento no ticket | testes de handoff web |
 | Rastreabilidade | `request_id` em toda resposta; eventos de caso auditados | `tests/test_request_observability.py` |
 | Fallback seguro | provider ou retrieval falha -> resposta padrao e escalonamento | `tests/test_chat_flow_errors.py` |
+| Intake de solucoes de IA com criticidade por regra | `governance/ai-intake.yaml` (demo), `app/ai_intake/`: criticidade deterministica, prazo gravado na submissao, separacao de funcoes (quem submete nao analisa), RIPD exigido para aprovar nivel alto, decisao com nota e motivo de lista fechada, trilha de eventos; `CHECK` no banco para as listas fechadas | `tests/test_ai_intake.py`, `tests/test_ai_intake_routes.py`, `tests/integration/test_ai_intake_postgres.py` |
 | Desenvolvimento com agente de IA | `CLAUDE.md`, `.agents/skills/`, trailer de coautoria, testes e evals antes do commit | historico de commits |
 
 ## Limites conhecidos
@@ -112,6 +115,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 - Limites conhecidos do mascaramento: telefone colado a letras (`telefone11...`) nao e pego; CNPJ formatado perde so a primeira parte; data de nascimento em formato ISO fica legivel (em dd/mm/aaaa ja ficava).
 - A gravacao da prioridade no PostgreSQL real nao foi verificada nesta copia.
 - Nao existe tela web do console; o console e uma API.
+- Intake de solucoes de IA: nao ha papeis (toda pessoa da equipe do console pode revisar; a unica regra e a separacao de funcoes); prazo em dias corridos; a criticidade depende do que quem submete declara; sem anexos (o RIPD e so uma referencia) e sem notificacao.
 
 ## Revisao
 
@@ -119,3 +123,4 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | --- | --- | --- |
 | 2026-11-26 | TI (desenvolvimento de IA) — exemplo (demo) | primeira versao da ficha |
 | 2026-11-26 | agente de codigo, revisao humana pendente | dados, transferencia e limites alinhados ao codigo |
+| 2026-11-27 | agente de codigo, revisao humana pendente | intake de solucoes de IA: dados do responsavel, controles e limites |

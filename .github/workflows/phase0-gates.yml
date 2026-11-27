@@ -110,6 +110,8 @@ jobs:
       # the seed test proves the priority INSERT and the per-domain SLA basis
       # through GET /web/support/cases; the monthly report test proves the
       # deadline policy frozen at opening and the late-close reason (020).
+      # The AI intake test proves migration 021: the review flow, the CHECKs
+      # and the demo seed of the intake.
       - name: Run support console PostgreSQL gates
         run: |
-          python -m pytest tests/integration/test_support_console_postgres.py tests/integration/test_support_transitions_postgres.py tests/integration/test_demo_seed_console_postgres.py tests/integration/test_monthly_report_postgres.py -q
+          python -m pytest tests/integration/test_support_console_postgres.py tests/integration/test_support_transitions_postgres.py tests/integration/test_demo_seed_console_postgres.py tests/integration/test_monthly_report_postgres.py tests/integration/test_ai_intake_postgres.py -q

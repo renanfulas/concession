@@ -1,0 +1,69 @@
+# Politica de intake de solucoes de IA - DEMONSTRACAO.
+#
+# Regras, prazos e niveis sao ficticios, para mostrar o fluxo. Substituir pela
+# politica aprovada pelo comite de dados/IA e pelo encarregado antes de qualquer
+# uso real. Ver docs/architecture/ai-intake.md.
+#
+# Como as regras funcionam:
+# - cada regra tem condicoes ligadas por E; a regra casa quando todas casam;
+# - quando varias regras casam, vale o maior nivel e todos os motivos aparecem;
+# - nenhuma regra casou -> `default_level`.
+# Condicoes aceitas: data_categories_any, automated_decision, external_facing,
+# human_in_loop, hosting_region_in, hosting_region_not_in.
+
+version: 1
+basis: "Politica de intake de IA (demo): prazos ficticios para demonstracao"
+default_level: baixa
+
+# Prazo da analise por criticidade, em dias corridos. Baixo risco tem caminho
+# rapido; alto risco tem mais prazo porque exige RIPD.
+sla_days:
+  baixa: 5
+  media: 10
+  alta: 15
+
+# Aprovar uma solucao destes niveis exige a referencia do RIPD (relatorio de
+# impacto a protecao de dados, LGPD art. 38).
+ripd_required_for:
+  - alta
+
+rules:
+  - id: dado_sensivel_ou_imagem
+    level: alta
+    reason: "trata dado sensivel, imagem de pessoas ou dado de crianca (LGPD art. 11 e 14)"
+    when:
+      data_categories_any: [sensivel, biometrico_imagem, crianca]
+
+  - id: decisao_automatizada
+    level: alta
+    reason: "toma decisao automatizada sobre pessoas (LGPD art. 20)"
+    when:
+      automated_decision: true
+      data_categories_any: [pessoal, sensivel, biometrico_imagem, crianca]
+
+  - id: transferencia_internacional
+    level: alta
+    reason: "dado pessoal hospedado fora do Brasil (LGPD art. 33)"
+    when:
+      hosting_region_not_in: [brasil]
+      data_categories_any: [pessoal, sensivel, biometrico_imagem, crianca]
+
+  - id: dado_pessoal_uso_externo
+    level: media
+    reason: "dado pessoal em solucao usada por publico externo"
+    when:
+      external_facing: true
+      data_categories_any: [pessoal, sensivel, biometrico_imagem, crianca]
+
+  - id: dado_pessoal
+    level: media
+    reason: "trata dado pessoal"
+    when:
+      data_categories_any: [pessoal, sensivel, biometrico_imagem, crianca]
+
+  - id: uso_externo_sem_revisao_humana
+    level: media
+    reason: "publico externo recebe resposta sem revisao humana"
+    when:
+      external_facing: true
+      human_in_loop: false

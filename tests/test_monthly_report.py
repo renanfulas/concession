@@ -88,10 +88,10 @@ def _rows(*cases: ReportCase, db_now: datetime | None = None) -> list[dict[str, 
 # --------------------------------------------------------------------------- #
 
 
-def test_migration_020_is_the_contract_and_declares_the_new_columns() -> None:
-    migration = Path("migrations") / CONTRACT_MIGRATION
+def test_migration_020_declares_the_new_columns() -> None:
+    migration = Path("migrations") / "020_support_case_sla_policy_and_late_reason.sql"
     sql = migration.read_text(encoding="utf-8")
-    assert CONTRACT_MIGRATION.startswith("020_")
+    assert CONTRACT_MIGRATION >= migration.name
     assert {"sla_minutes", "sla_basis", "late_reason"} <= REQUIRED_COLUMNS["support_cases"]
     for code in LATE_REASONS:
         assert f"'{code}'" in sql

@@ -489,8 +489,14 @@ def _remove_staff(database_url: str, identity_hash_secret: str) -> str:
                 SELECT
                   EXISTS (SELECT 1 FROM support_cases WHERE assignee_staff_id = %s)
                   OR EXISTS (SELECT 1 FROM support_case_events WHERE actor_staff_id = %s)
+                  -- Migration 021: the intake also references staff members.
+                  OR EXISTS (
+                    SELECT 1 FROM ai_solutions
+                    WHERE submitted_by = %s OR reviewer_staff_id = %s
+                  )
+                  OR EXISTS (SELECT 1 FROM ai_solution_events WHERE actor_staff_id = %s)
                 """,
-                (staff_id, staff_id),
+                (staff_id, staff_id, staff_id, staff_id, staff_id),
             )
             still_referenced = bool(cursor.fetchone()[0])
             if still_referenced:
