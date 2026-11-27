@@ -28,6 +28,12 @@ from app.notifications.customer_status import (
     render_customer_status_whatsapp,
 )
 from app.support.customer_preferences import email_notifications_opted_in
+from app.support.sla import (
+    LATE_REASONS,
+    compute_sla,
+    domain_sla_overrides,
+    frozen_case_sla,
+)
 from app.support.wa_binding import decrypt_wa_id
 from app.support.whatsapp_bridge import resolve_template_name
 
@@ -78,6 +84,14 @@ class InvalidTransition(TransactionBusinessError):
         super().__init__(f"invalid transition from status={status}")
 
 
+class LateReasonRequired(TransactionBusinessError):
+    """Closing a case after its deadline needs a ``late_reason`` code."""
+
+
+class LateReasonNotApplicable(TransactionBusinessError):
+    """``late_reason`` sent for a case closed within its deadline."""
+
+
 @dataclass(frozen=True)
 class TransitionResult:
     case_id: str
@@ -85,6 +99,7 @@ class TransitionResult:
     to_status: str
     assignee_staff_id: str | None
     assignee_display_name: str | None
+    late_reason: str | None = None
 
 
 class SupportCaseTransitionService:
@@ -104,16 +119,25 @@ class SupportCaseTransitionService:
         action: str,
         actor_staff_id: str,
         note: str | None,
+        late_reason: str | None = None,
     ) -> TransitionResult:
         if action not in VALID_ACTIONS:
             raise ValueError(f"unknown transition action: {action}")
+        if late_reason is not None and late_reason not in LATE_REASONS:
+            raise ValueError(f"unknown late_reason: {late_reason}")
+        if late_reason is not None and action != "close":
+            raise LateReasonNotApplicable(action)
         clean_note = _clean_note(note)
 
         with self.runtime.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT status, assignee_staff_id
+                    SELECT status, assignee_staff_id, priority, opened_at,
+                           sla_minutes, sla_basis,
+                           (SELECT d.name FROM domains d
+                            WHERE d.id = support_cases.domain_id),
+                           now() AS db_now
                     FROM support_cases
                     WHERE id = %s
                     FOR UPDATE
@@ -131,6 +155,15 @@ class SupportCaseTransitionService:
                     raise InvalidTransition(current_status)
                 if action == "claim" and current_assignee is not None:
                     raise InvalidTransition(current_status)
+
+                stored_late_reason: str | None = None
+                if action == "close":
+                    late = self._closing_after_deadline(cursor, case_id, row)
+                    if late and late_reason is None:
+                        raise LateReasonRequired(case_id)
+                    if not late and late_reason is not None:
+                        raise LateReasonNotApplicable(case_id)
+                    stored_late_reason = late_reason if late else None
 
                 if action == "claim":
                     new_assignee: str | None = actor_staff_id
@@ -161,10 +194,11 @@ class SupportCaseTransitionService:
                     cursor.execute(
                         """
                         UPDATE support_cases
-                        SET status = %s, updated_at = now(), closed_at = now()
+                        SET status = %s, updated_at = now(), closed_at = now(),
+                            late_reason = %s
                         WHERE id = %s AND status = %s
                         """,
-                        (to_status, case_id, current_status),
+                        (to_status, stored_late_reason, case_id, current_status),
                     )
                 else:
                     cursor.execute(
@@ -219,7 +253,45 @@ class SupportCaseTransitionService:
             to_status=to_status,
             assignee_staff_id=new_assignee,
             assignee_display_name=assignee_display_name,
+            late_reason=stored_late_reason,
         )
+
+    def _closing_after_deadline(self, cursor: Any, case_id: str, row: tuple) -> bool:
+        """Whether closing now misses the case's deadline (pauses discounted).
+
+        Uses the policy frozen at opening (migration 020) or, for older cases,
+        the domain SLA in force. Rows without ``opened_at`` (legacy shape)
+        are treated as on time.
+        """
+
+        if len(row) < 8 or row[3] is None:
+            return False
+        priority, opened_at, sla_minutes, sla_basis, domain_name, db_now = row[2:8]
+        current = None
+        settings = self.runtime.settings
+        domains_path = getattr(settings, "domains_path", None)
+        if sla_minutes is None and domains_path is not None:
+            from app.domain_engine.loader import DomainLoader
+
+            config = DomainLoader(domains_path).load(str(domain_name))
+            current = domain_sla_overrides([config] if config is not None else []).get(
+                str(domain_name)
+            )
+        from app.support.repository import SupportCaseRepository
+
+        waiting = SupportCaseRepository(self.runtime)._load_waiting_seconds(
+            cursor, [case_id], db_now
+        ).get(str(case_id), 0.0)
+        assessment = compute_sla(
+            str(priority),
+            opened_at,
+            "in_progress",
+            db_now,
+            settings,
+            waiting_seconds=waiting,
+            domain_sla=frozen_case_sla(str(priority), sla_minutes, sla_basis, current),
+        )
+        return assessment.elapsed_ratio > 1.0
 
     def _maybe_notify_customer(
         self, cursor: Any, *, case_id: str, action: str, to_status: str

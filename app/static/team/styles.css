@@ -235,6 +235,10 @@ button {
   gap: 12px;
 }
 
+.report {
+  align-items: flex-end;
+}
+
 .notice {
   background: var(--yellow-bg);
   color: var(--yellow);

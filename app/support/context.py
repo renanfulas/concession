@@ -70,6 +70,9 @@ class SupportCaseContext:
     # chaves (ex.: o push-side snapshot nunca usa build_case_context).
     assignee_staff_id: str | None = None
     assignee_display_name: str | None = None
+    # Migration 020: deadline policy frozen at opening (None for older cases).
+    sla_minutes: int | None = None
+    sla_basis: str | None = None
 
 
 def build_case_context(
@@ -117,6 +120,8 @@ def build_case_context(
         customer=customer,
         assignee_staff_id=_optional_str(case.get("assignee_staff_id")),
         assignee_display_name=_optional_str(case.get("assignee_display_name")),
+        sla_minutes=_optional_int(case.get("sla_minutes")),
+        sla_basis=_optional_str(case.get("sla_basis")),
     )
 
 
@@ -185,6 +190,10 @@ def _as_str_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item) for item in value if isinstance(item, str)]
+
+
+def _optional_int(value: Any) -> int | None:
+    return int(value) if value is not None else None
 
 
 def _optional_str(value: Any) -> str | None:

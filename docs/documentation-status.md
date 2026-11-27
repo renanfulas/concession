@@ -24,8 +24,15 @@
   ficticio marcado em cada arquivo.
 - Dominio de referencia: `suporte-vps-whatsapp`, mantido como regressao do
   nucleo.
-- Migrations `001-019` sem mudanca de schema nesta copia; a coluna `priority`
-  de `support_cases` ja existia e agora recebe o valor do turno.
+- Migrations `001-019` vieram do nucleo; a coluna `priority` de
+  `support_cases` ja existia e agora recebe o valor do turno. A `020`
+  (`020_support_case_sla_policy_and_late_reason.sql`) e a primeira desta
+  copia: `sla_minutes`/`sla_basis` gravados na abertura e `late_reason` com
+  `CHECK` de lista fechada; e o novo `CONTRACT_MIGRATION` de
+  `app/db/schema_contract.py`.
+- Contrato HTTP novo: `GET /web/support/reports/monthly.csv` e o campo
+  `late_reason` em `POST /web/support/cases/{case_id}/transition`, descritos em
+  `docs/architecture/integration-contracts.md`.
 - Seed de demonstracao do console: `scripts/seed_demo_cases.py` (somente
   `APP_ENV` development/test e banco local, fora de `migrations/`), descrito
   em `docs/runbooks/support-console-smoke.md`. O job `postgres` de

@@ -14,12 +14,15 @@ from typing import Any
 
 from app.db.runtime import DatabaseRuntime
 from app.support.context import SupportCaseContext, build_case_context
+from app.support.monthly_report import ReportCase
 from app.support.transcript import fetch_conversation_transcript
 
 
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE_SIZE = 25
 MAX_TRANSCRIPT_TURNS = 200
+# Monthly report safety cap (a month of a concession queue is far below it).
+REPORT_ROW_CAP = 20000
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,9 @@ class SupportCaseSummary:
     assignee_staff_id: str | None = None
     assignee_display_name: str | None = None
     waiting_seconds: float = 0.0
+    # Migration 020: deadline policy frozen at opening (None for older cases).
+    sla_minutes: int | None = None
+    sla_basis: str | None = None
 
 
 @dataclass(frozen=True)
@@ -137,7 +143,7 @@ class SupportCaseRepository:
                            sc.request_id, sc.reason_codes,
                            sc.context_snapshot_sanitized, sc.opened_at,
                            sc.updated_at, sc.assignee_staff_id, am.display_name,
-                           now() AS db_now
+                           now() AS db_now, sc.sla_minutes, sc.sla_basis
                     FROM support_cases sc
                     JOIN domains d ON d.id = sc.domain_id
                     LEFT JOIN staff_members am ON am.id = sc.assignee_staff_id
@@ -174,8 +180,11 @@ class SupportCaseRepository:
                 )
         return ActiveCaseSet(
             cases=[
-                self._to_console_summary(
-                    row, waiting_seconds=waiting_by_case.get(str(row[0]), 0.0)
+                dataclasses.replace(
+                    self._to_console_summary(
+                        row, waiting_seconds=waiting_by_case.get(str(row[0]), 0.0)
+                    ),
+                    **_sla_policy_fields(row, start=13),
                 )
                 for row in rows
             ],
@@ -227,6 +236,70 @@ class SupportCaseRepository:
                 )
                 rows = cursor.fetchall()
         return [self._to_console_summary(row) for row in rows]
+
+    def list_cases_opened_between(
+        self,
+        *,
+        start: Any,
+        end: Any,
+        domain: str | None,
+        cap: int = REPORT_ROW_CAP,
+    ) -> tuple[list[ReportCase], Any, bool]:
+        """Cases opened in ``[start, end)`` for the monthly report.
+
+        Only the columns the report needs: no customer, summary, transcript or
+        ``request_id``. ``pending_consent`` stays out, same as the queue.
+        Returns ``(cases, db_now, truncated)``.
+        """
+
+        bounded_cap = max(1, int(cap))
+        with self.runtime.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT sc.id, d.name, sc.channel, sc.status, sc.priority,
+                           sc.reason_codes, sc.opened_at, sc.closed_at,
+                           sc.sla_minutes, sc.sla_basis, sc.late_reason,
+                           now() AS db_now
+                    FROM support_cases sc
+                    JOIN domains d ON d.id = sc.domain_id
+                    WHERE sc.opened_at >= %s AND sc.opened_at < %s
+                      AND sc.status != 'pending_consent'
+                      AND (%s::text IS NULL OR d.name = %s)
+                    ORDER BY sc.opened_at ASC
+                    LIMIT %s
+                    """,
+                    (start, end, domain, domain, bounded_cap + 1),
+                )
+                rows = cursor.fetchall()
+                truncated = len(rows) > bounded_cap
+                rows = rows[:bounded_cap]
+                if rows:
+                    db_now = rows[0][11]
+                else:
+                    cursor.execute("SELECT now()")
+                    db_now = cursor.fetchone()[0]
+                waiting = self._load_waiting_seconds(
+                    cursor, [str(row[0]) for row in rows], db_now
+                )
+        cases = [
+            ReportCase(
+                case_id=str(row[0]),
+                domain=str(row[1]),
+                channel=str(row[2]),
+                status=str(row[3]),
+                priority=str(row[4]),
+                reason_codes=_load_json(row[5], default=[]),
+                opened_at=row[6],
+                closed_at=row[7],
+                sla_minutes=int(row[8]) if row[8] is not None else None,
+                sla_basis=str(row[9]) if row[9] is not None else None,
+                late_reason=str(row[10]) if row[10] is not None else None,
+                waiting_seconds=waiting.get(str(row[0]), 0.0),
+            )
+            for row in rows
+        ]
+        return cases, db_now, truncated
 
     def database_now(self) -> Any:
         """Database clock, so SLA math never mixes clocks with ``opened_at``."""
@@ -349,7 +422,8 @@ class SupportCaseRepository:
                               AND vi.status = 'verified'
                             ORDER BY vi.verified_at DESC
                             LIMIT 1),
-                           sc.assignee_staff_id, am.display_name
+                           sc.assignee_staff_id, am.display_name,
+                           sc.sla_minutes, sc.sla_basis
                     FROM support_cases sc
                     JOIN domains d ON d.id = sc.domain_id
                     LEFT JOIN customers c ON c.id = sc.customer_id
@@ -379,6 +453,7 @@ class SupportCaseRepository:
             "customer_phone_last4": case_row[13],
             "assignee_staff_id": case_row[14],
             "assignee_display_name": case_row[15],
+            **_sla_policy_fields(case_row, start=16),
         }
         return build_case_context(case, transcript_rows)
 
@@ -431,6 +506,20 @@ class SupportCaseRepository:
             opened_at=row[8],
             updated_at=row[9],
         )
+
+
+def _sla_policy_fields(row: tuple, *, start: int) -> dict[str, Any]:
+    """``sla_minutes``/``sla_basis`` appended at ``start`` (migration 020).
+
+    Tolerates shorter rows so callers that predate the columns keep working.
+    """
+
+    minutes = row[start] if len(row) > start else None
+    basis = row[start + 1] if len(row) > start + 1 else None
+    return {
+        "sla_minutes": int(minutes) if minutes is not None else None,
+        "sla_basis": str(basis) if basis is not None else None,
+    }
 
 
 def _actor_display_name(*, actor_kind: str, staff_display_name: Any) -> str:
