@@ -180,6 +180,22 @@ def test_feedback_identifier_accepts_numeric_leading_uuid() -> None:
     assert WebFeedbackRequest(request_id=request_id, helpful=True).request_id == request_id
 
 
+def test_all_digit_uuid_is_accepted_but_a_digit_run_slice_is_not() -> None:
+    """Test ids must be whole UUIDs: a hex slice can come out as 10 digits.
+
+    The monthly report integration test built ``it-020-<hex[:10]>`` and failed
+    about once in 110 cases opened, when the slice was all digits and the
+    phone guard rejected it.
+    """
+
+    from app.api.schemas.feedback import safe_feedback_identifier
+
+    all_digits = "12345678-1234-4234-8234-123456789012"
+    assert safe_feedback_identifier(all_digits, field_name="request_id") == all_digits
+    with pytest.raises(ValueError):
+        safe_feedback_identifier("it-020-1234567890", field_name="request_id")
+
+
 def test_repository_rejects_unsafe_identifier_if_model_validation_is_bypassed() -> None:
     runtime = RecordingRuntime(rows=[])
     repository = OperationalRepository(runtime)
