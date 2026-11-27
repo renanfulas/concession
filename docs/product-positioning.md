@@ -58,4 +58,6 @@ Evite:
 - promessas absolutas ou linguagem de hype
 - afirmar que o bot resolve sozinho
 - esconder que contrato, prazos e ativos sao ficticios
-- usar marca, logo ou identidade visual de empresas reais
+- usar marca, nome, logo ou identidade visual de empresas reais (excecao: as
+  telas usam so a paleta de cores do logotipo da JCDecaux; ver `CLAUDE.md`)
+- sugerir vinculo, parceria ou aprovacao de empresa real

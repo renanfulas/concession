@@ -27,7 +27,11 @@ que vai mexer (`docs/navigation.md` diz quais).
 - PostgreSQL + pgvector e o vector store de producao; Chroma e so prototipo.
 - Conteudo ficticio (contrato, prazos, ativos, aviso de privacidade) continua
   marcado como demo. Nunca apresente como real.
-- Nao use marca, logo ou identidade visual de empresas reais.
+- Nao use marca, nome, logo ou identidade visual de empresas reais. Excecao
+  decidida pelo dono do projeto: as telas usam so a paleta de cores do logotipo
+  da JCDecaux (azul `#004479` e azul medio `#5A81AE`). Nome, logo, tipografia e
+  demais elementos de marca continuam proibidos, e a demo continua sem afirmar
+  vinculo com a empresa.
 
 ## Regras de governanca para agentes
 
