@@ -37,7 +37,11 @@ O Caddy bloqueia o resto (`/chat`, `/domains`, `/ingestion`, `/internal`,
 - Banco dedicado (`concession_demo`), so em `127.0.0.1`, sem outra aplicacao.
 - Um worker do uvicorn com `--proxy-headers`: o rate limit do chat
   (`WEB_CHAT_RATE_LIMIT_PER_MINUTE=6`) vale por IP real do visitante, e o log
-  guarda so o hash do IP.
+  guarda so o hash do IP. O access log do uvicorn fica desligado
+  (`--no-access-log`): com `--proxy-headers` ele gravaria esse IP em claro.
+  Conferir depois de cada mudanca na unidade:
+  `journalctl -u concession-demo --since "-10 min" | grep -cE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:'`
+  deve dar `0`.
 - LLM: a chave fica so em `/etc/concession-demo/demo.env`, colocada pelo dono
   da conta. Antes de colocar, configure um limite de gasto no projeto da OpenAI.
   Sem chave, a demo continua classificando, priorizando, dando prazo e o aviso
