@@ -109,7 +109,7 @@ Os evals rodam sem chave de LLM. Nesse modo, eles validam retrieval,
 fontes recuperadas (`references`), classificacao e escalonamento, mas nao a
 qualidade do texto gerado pelo modelo nem o que ele de fato cita.
 
-### Evals com LLM real (opt-in, nao e gate): linha de base de 2026-11-27
+### Evals com LLM real (opt-in, nao e gate): 21/26 na linha de base, 26/26 depois da correcao
 
 O modo `--provider-mode real` mede o texto do modelo: falha com
 `provider_error`, cobra termos, prazos permitidos e citacao do item ou artigo,
@@ -136,18 +136,28 @@ motivos de encaminhamento passaram em todos os casos. As 5 falhas:
 - **Citacao instavel** (`relogio-hora-errada`, 2/3): uma rodada nao cita o
   item 3.3.
 
-| Campo | Valor |
-| --- | --- |
-| Modelo (`model`) | `gpt-4o-mini-2024-07-18` (OpenAI) |
-| Data (`timestamp_utc`) | 2026-11-27 05:01 UTC |
-| Temperatura (`temperature`) | 0.0 |
-| Rodadas (`runs`) | 3 |
-| Commit (`git_commit`) | `3326b79` (arvore limpa) |
-| `concessoes-manutencao` pass@all / taxa media | 9/13 (69%) / 74% |
-| `lgpd-titular` pass@all / taxa media | 12/13 (92%) / 92% |
-| Prazos alucinados (`allowed_durations` passed/total) | 21/24 checagens; as 3 falhas sao "15 dias" em `suspeita-vazamento` |
-| Tokens (`usage.total_tokens`) | 141.151 (133.098 de entrada, 8.053 de saida) em 69 chamadas |
-| Custo (calculado a parte; o relatorio nao estima) | nao estimado; calcular pelo `usage` com a tabela de precos vigente do provedor |
+A correcao mexeu so no `domain.yaml` dos dois dominios, sem codigo novo no
+nucleo: regras `defeito_geral` (item 3.3) e `cobranca_atendimento`, `notice`
+com o prazo fixo na notificacao da fiscalizacao (24 horas) e no incidente de
+dados (4 horas), orientacao que separa os 15 dias do titular do prazo de
+incidente e pedido explicito do numero do item do anexo. Os evals sem LLM
+passaram a exigir os dois prazos e os motivos novos.
+
+| Campo | Linha de base | Depois da correcao |
+| --- | --- | --- |
+| Modelo (`model`) | `gpt-4o-mini-2024-07-18` (OpenAI) | `gpt-4o-mini-2024-07-18` (OpenAI) |
+| Data (`timestamp_utc`) | 2026-11-27 05:01 UTC | 2026-11-27 05:49 UTC |
+| Temperatura (`temperature`) | 0.0 | 0.0 |
+| Rodadas (`runs`) | 3 | 3 |
+| Commit (`git_commit`) | `3326b79` (arvore limpa) | `3386ca6` (arvore limpa) |
+| `concessoes-manutencao` pass@all / taxa media | 9/13 (69%) / 74% | 13/13 (100%) / 100% |
+| `lgpd-titular` pass@all / taxa media | 12/13 (92%) / 92% | 13/13 (100%) / 100% |
+| Prazos alucinados (`allowed_durations` passed/total) | 21/24; as 3 falhas sao "15 dias" em `suspeita-vazamento` | 24/24 |
+| Tokens (`usage.total_tokens`) | 141.151 em 69 chamadas | 142.591 em 69 chamadas |
+| Custo (calculado a parte; o relatorio nao estima) | nao estimado | nao estimado |
+
+26/26 com 3 rodadas e um modelo nao e garantia: o modo real continua opt-in e
+fora da CI, e vale rodar de novo ao trocar modelo, prompt ou base.
 
 ## Rodando localmente
 
@@ -301,7 +311,7 @@ persistence from `record_chat` to the console API. The domain evals pass
 without an LLM key, so they check retrieval, returned sources (`references`),
 classification and escalation, not the quality of model-generated text.
 
-**Real-LLM evals (opt-in, not a gate): baseline of 2026-11-27.**
+**Real-LLM evals (opt-in, not a gate): 21/26 at baseline, 26/26 after the fix.**
 `--provider-mode real` scores the model's text: it fails on `provider_error`,
 checks required terms, allowed deadlines and the cited item or article, and
 repeats each case `--runs` times. Baseline before any prompt tuning, with
@@ -321,6 +331,17 @@ reasons passed in every case. 141,151 tokens in total. The 5 failures:
   the 24 hours for an auditor's notice.
 - **Unstable citation** (`relogio-hora-errada`, 2/3): one run does not cite
   item 3.3.
+
+The fix only touched the two domains' `domain.yaml`, with no new core code:
+`defeito_geral` (item 3.3) and `cobranca_atendimento` rules, a `notice` with
+the fixed deadline for an auditor's notice (24 hours) and a data incident
+(4 hours), a guideline that keeps the data subject's 15 days apart from the
+incident deadline, and an explicit request for the annex item number. The
+no-LLM evals now require both deadlines and the new reasons. Same model,
+temperature and runs, commit `3386ca6`: 26 of 26 cases pass all 3 runs, 24/24
+deadline checks, 142,591 tokens. Three runs on one model are not a guarantee:
+real mode stays opt-in and out of CI, and should be re-run when the model,
+prompt or knowledge base changes.
 
 ```bash
 python -m app.evals.run_domain_eval concessoes-manutencao lgpd-titular \
