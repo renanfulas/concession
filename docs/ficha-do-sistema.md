@@ -52,7 +52,7 @@ Nao faz:
 | Dado | Onde | Tratamento | Base legal (LGPD art. 7) — demo |
 | --- | --- | --- | --- |
 | Numero de telefone do cidadao | identidade do canal, OTP | guardado como hash (HMAC) e ultimos 4 digitos; o numero completo aparece nas linhas "`wa_id`" e "telefone de destino" abaixo | legitimo interesse (art. 7, IX) ou execucao de politica publica (art. 7, III); a confirmar pelo encarregado real |
-| Texto das mensagens | conversas e tickets | mascarado antes de persistir (CPF com digito verificador, cartao, e-mail, telefone e demais sequencias longas de digitos, IP); datas ISO e protocolos rotulados ficam legiveis para a trilha de auditoria; `app/core/persistence_sanitize.py`. O texto vai **cru** ao provedor de LLM (ver "Transferencia internacional") | idem |
+| Texto das mensagens | conversas e tickets | mascarado antes de persistir (CPF com digito verificador, cartao, e-mail, telefone e demais sequencias longas de digitos, IP); datas ISO e protocolos rotulados ficam legiveis para a trilha de auditoria; `app/core/persistence_sanitize.py`. O mesmo mascaramento vale antes do provedor de LLM (ver "Transferencia internacional") | idem |
 | Identificador de sessao | historico curto | so o hash vai para banco e log | idem |
 | Codigo OTP | verificacao de identidade | so o digest; expira | cumprimento de obrigacao legal (art. 7, II: atender o titular com seguranca) |
 | Nome e e-mail do cidadao | `customers.display_label` e `customers.email` (migration 013, `app/db/operational.py:634-642` e `:690-696`); texto do alerta ao time | informados no gate de consentimento do handoff web; nome passa por `sanitize_for_persistence`; e-mail validado por formato e guardado legivel porque o time usa para contato | consentimento (art. 7, I), colhido no gate de consentimento |
@@ -64,14 +64,11 @@ Nao faz:
 
 Dados sensiveis (art. 11): nao sao coletados. Dados de criancas: nao sao coletados de proposito.
 
-Transferencia internacional: hoje o texto **cru** da pergunta vai ao provedor
-de embeddings (consulta pgvector) e ao provedor de LLM, junto com o contexto
-recuperado (`app/orchestration/chat_flow.py:209` e `:270-272`). Antes disso so ha
-higiene de entrada (`app/core/sanitize.py`: tamanho e caracteres de controle);
-o mascaramento de `persistence_sanitize.py` vale so para o que e gravado.
-Numa operacao real, isso exige clausula contratual com o fornecedor e registro
-no inventario (art. 33). Proximo controle a construir: mascarar a pergunta
-antes de enviar ao provedor.
+Transferencia internacional: a pergunta passa pelo mesmo mascaramento da
+persistencia antes de ir ao provedor de embeddings (consulta pgvector) e ao
+provedor de LLM, junto com o contexto recuperado (`app/orchestration/chat_flow.py`;
+a deteccao local de cartao e segredo usa o texto original). Numa operacao real,
+isso exige clausula contratual com o fornecedor e registro no inventario (art. 33).
 
 ## Criticidade
 
@@ -79,7 +76,7 @@ antes de enviar ao provedor.
 | --- | --- | --- |
 | Impacto de erro na resposta | medio | resposta errada pode informar prazo errado; mitigado porque o prazo do console vem do `domain.yaml`, nao do texto do LLM |
 | Impacto de erro na classificacao | medio-alto | classificar risco a pessoas como limpeza atrasa o atendimento; mitigado por evals com `required_handoff_reasons` e por escalonamento sempre humano |
-| Dado pessoal | medio | telefone, nome, e-mail e texto livre; o texto e mascarado antes de persistir, mas vai cru ao provedor, e o telefone fica em claro no outbox |
+| Dado pessoal | medio | telefone, nome, e-mail e texto livre; o texto e mascarado antes de persistir e antes do provedor; o telefone fica em claro no outbox |
 | Autonomia | baixa | todo pedido que exige acao vira caso para uma pessoa |
 | Exposicao publica | alta | canal aberto ao cidadao; rate limit, confinamento e fallback seguro |
 
@@ -94,6 +91,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Prazo deterministico | `domain.yaml` bloco `sla`, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Orientacao de seguranca fixa | `escalation_rules[].notice` no `domain.yaml`, aplicada em `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals exigem "ligue 193" e "nunca pede senha" mesmo sem LLM |
 | Mascaramento antes de persistir | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
+| Mascaramento antes do provedor | a pergunta passa pelo mesmo mascaramento antes da consulta de embeddings e do prompt do LLM; a deteccao local (cartao, segredo) usa o texto original | `tests/test_provider_masking.py` |
 | Logs sem token ou `session_id` bruto; PII so nas excecoes listadas em "Limites conhecidos" | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
 | Consentimento antes de contato direto | gate de consentimento no ticket | testes de handoff web |
 | Rastreabilidade | `request_id` em toda resposta; eventos de caso auditados | `tests/test_request_observability.py` |
@@ -102,7 +100,6 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 
 ## Limites conhecidos
 
-- A pergunta vai crua (sem mascaramento) ao provedor de embeddings e de LLM. Proximo controle: mascarar antes do provedor.
 - O log `rate_limit_exceeded` registra o IP do cliente em claro (`app/main.py:127`, `:162`).
 - O campo `to` do `operational_outbox.payload_sanitized` guarda o telefone em claro, e nao ha purga do outbox no codigo.
 - O cookie de lembrete do operador carrega o telefone E.164 em claro.

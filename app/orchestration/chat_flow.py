@@ -4,7 +4,7 @@ import time
 from time import perf_counter
 
 from app.core.errors import ProviderError, RetrievalError
-from app.core.persistence_sanitize import contains_card_number
+from app.core.persistence_sanitize import contains_card_number, sanitize_for_persistence
 from app.core.text import fold
 from app.domain_engine.models import DomainConfig
 from app.handoff.service import HandoffService
@@ -198,12 +198,16 @@ class ChatFlowService:
             }
 
         pre_handoff_reasons = self.handoff_service.inspect_question(domain, question)
+        # Detection above needs the raw text (card, CPF, secrets). Everything that
+        # leaves the process -- embedding query and LLM prompt -- gets the masked
+        # text, so personal data typed by the citizen never reaches a provider.
+        provider_question = sanitize_for_persistence(question) or ""
 
         if self._should_block_automated_response(pre_handoff_reasons):
             if self._can_retrieve_references_for_blocked_response(pre_handoff_reasons):
                 try:
                     retrieval_started_at = perf_counter()
-                    chunks = self.retrieval_service.retrieve(domain, question)
+                    chunks = self.retrieval_service.retrieve(domain, provider_question)
                 except RetrievalError:
                     chunks = []
                 finally:
@@ -229,7 +233,7 @@ class ChatFlowService:
 
         try:
             retrieval_started_at = perf_counter()
-            chunks = self.retrieval_service.retrieve(domain, question)
+            chunks = self.retrieval_service.retrieve(domain, provider_question)
         except RetrievalError as exc:
             error_code = exc.error_code
         finally:
@@ -294,7 +298,7 @@ class ChatFlowService:
                     )
                 prompt = build_prompt(
                     domain=domain,
-                    question=question,
+                    question=provider_question,
                     chunks=chunks,
                     history=history,
                     customer_summary=self._recall_customer_summary(

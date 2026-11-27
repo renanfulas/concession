@@ -35,9 +35,9 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Entradas da demo sem `.env` | ✅ | `DEFAULT_DOMAIN` padrao e `concessoes-manutencao` (fonte unica em `Settings`, lida pelo health); `/web/chat` usa o mesmo roteador e memoria pegajosa do WhatsApp (`ENABLE_WEB_DOMAIN_ROUTER=true` por padrao) | — | `tests/test_web_chat.py`, `tests/test_health_readiness.py` |
 | `references` sem caminho do servidor | ✅ codigo · 🟡 banco | fonte estavel `domains/<dominio>/knowledge/...` na ingestao; resposta deduplicada e com caminhos legados reescritos (`app/orchestration/references.py`) | reingerir pgvector e desativar artigos legados (`docs/runbooks/pgvector-promotion-checklist.md`) | `tests/test_reference_paths.py` |
 | Orientacao de seguranca deterministica (`notice`) | ✅ | texto fixo por regra (risco a pessoas: afastar e ligar 193; incidente de dados: trocar senhas, canal nunca pede senha), antes de qualquer resposta, inclusive fallback e resposta bloqueada | revisar o texto com seguranca do trabalho e o encarregado reais | `tests/test_rule_notices.py`, evals base dos dois dominios |
-| Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md`, alinhadas ao codigo (dados guardados, pergunta crua ao provedor, bases legais como raciocinio demo) | confirmar bases legais com o encarregado real | revisao humana |
+| Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md`, alinhadas ao codigo (dados guardados, mascaramento antes do provedor, bases legais como raciocinio demo) | confirmar bases legais com o encarregado real | revisao humana |
 | Resumo em ingles no README | ✅ | secao `English summary` no fim do `README.md`, com link no topo | atualizar junto quando o status em PT mudar | `tests/test_docs_links.py`, revisao humana |
-| Mascarar a pergunta antes do provedor de LLM/embeddings | ⬜ | so higiene de entrada (`app/core/sanitize.py`); mascaramento so na persistencia | aplicar o mascaramento antes de `retrieve` e `build_prompt` em `app/orchestration/chat_flow.py` | — |
+| Mascarar a pergunta antes do provedor de LLM/embeddings | ✅ | `sanitize_for_persistence` aplicado antes de `retrieve` e `build_prompt` em `app/orchestration/chat_flow.py`; deteccao local continua no texto original | historico de conversa enviado ao prompt ja vem mascarado da persistencia | `tests/test_provider_masking.py` |
 | Evals com LLM real (opt-in, nao e gate) | 🟡 | `--provider-mode real`, `--runs`, `--report`; falha com `provider_error`; bloco `llm_expectation` (`any_of`, `forbidden_terms`, `allowed_durations`, `expected_citation`) em 10 casos base; relatorio com modelo, temperatura, commit, pass@all e uso de tokens | rodar com chave real e preencher a tabela do README (nao executado ainda) | `tests/test_eval_real_mode.py` (providers falsos); gate deterministico inalterado |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
@@ -48,7 +48,6 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 
 Detalhe em `docs/ficha-do-sistema.md` ("Limites conhecidos").
 
-- A pergunta vai crua ao provedor de embeddings e de LLM (`app/orchestration/chat_flow.py:209`, `:270-272`).
 - `rate_limit_exceeded` registra o IP do cliente em claro (`app/main.py:127`, `:162`).
 - O campo `to` do `operational_outbox.payload_sanitized` guarda o telefone em claro; nao ha purga do outbox.
 - O cookie de lembrete do operador carrega o telefone E.164 em claro (`app/support/staff_auth.py:14-19`).

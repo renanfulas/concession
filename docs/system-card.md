@@ -51,7 +51,7 @@ Does not:
 | Data | Where | Handling | Legal basis (LGPD art. 7) — demo |
 | --- | --- | --- | --- |
 | Citizen phone number | channel identity, OTP | stored as HMAC hash and last 4 digits; the full number appears in the "`wa_id`" and "destination phone" rows below | legitimate interest (art. 7, IX) or public policy execution (art. 7, III); to be confirmed by the real DPO |
-| Message text | conversations and tickets | masked before persistence (CPF with check digits, card, e-mail, phone and other long digit runs, IP); ISO dates and labeled protocol numbers stay readable for the audit trail; `app/core/persistence_sanitize.py`. The text is sent **raw** to the LLM provider (see "International transfer") | same |
+| Message text | conversations and tickets | masked before persistence (CPF with check digits, card, e-mail, phone and other long digit runs, IP); ISO dates and labeled protocol numbers stay readable for the audit trail; `app/core/persistence_sanitize.py`. The same masking applies before the LLM provider (see "International transfer") | same |
 | Session identifier | short history | only the hash reaches database and logs | same |
 | OTP code | identity verification | digest only; expires | legal obligation (art. 7, II: serving the data subject safely) |
 | Citizen name and e-mail | `customers.display_label` and `customers.email` (migration 013, `app/db/operational.py:634-642` and `:690-696`); team alert text | given at the web handoff consent gate; name goes through `sanitize_for_persistence`; e-mail is format-validated and stored readable because the team uses it for contact | consent (art. 7, I), collected at the consent gate |
@@ -63,14 +63,12 @@ Does not:
 
 Sensitive data (art. 11) is not collected. Children's data is not collected on purpose.
 
-International transfer: today the **raw** question text is sent to the
-embeddings provider (pgvector query) and to the LLM provider, together with
-the retrieved context (`app/orchestration/chat_flow.py:209` and `:270-272`).
-Before that there is only input hygiene (`app/core/sanitize.py`: length and
-control characters); `persistence_sanitize.py` masking applies only to what is
-stored. A real deployment needs contractual clauses with the vendor and an
-inventory entry (art. 33). Next control to build: mask the question before it
-reaches the provider.
+International transfer: the question goes through the same masking as
+persistence before it reaches the embeddings provider (pgvector query) and
+the LLM provider, together with the retrieved context
+(`app/orchestration/chat_flow.py`; local card and secret detection uses the
+original text). A real deployment needs contractual clauses with the vendor
+and an inventory entry (art. 33).
 
 ## Criticality
 
@@ -78,7 +76,7 @@ reaches the provider.
 | --- | --- | --- |
 | Wrong answer impact | medium | could state a wrong deadline; mitigated because the console deadline comes from `domain.yaml`, not from LLM text |
 | Wrong classification impact | medium-high | tagging a safety risk as cleaning delays response; mitigated by evals with `required_handoff_reasons` and mandatory human handling |
-| Personal data | medium | phone, name, e-mail and free text; text is masked before persistence but sent raw to the provider, and the phone is in clear in the outbox |
+| Personal data | medium | phone, name, e-mail and free text; text is masked before persistence and before the provider; the phone is in clear in the outbox |
 | Autonomy | low | every request that needs action becomes a case for a person |
 | Public exposure | high | open citizen channel; rate limiting, confinement and safe fallback |
 
@@ -93,6 +91,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193" and "nunca pede senha" even without an LLM |
 | Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
+| Masking before the provider | the question goes through the same masking before the embedding query and the LLM prompt; local detection (card, secret) uses the original text | `tests/test_provider_masking.py` |
 | Logs without tokens or raw `session_id`; PII only in the exceptions listed under "Known limits" | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
 | Consent before direct contact | consent gate on tickets | web handoff tests |
 | Traceability | `request_id` on every response; audited case events | `tests/test_request_observability.py` |
@@ -101,7 +100,6 @@ Suggested rating: **medium risk**, mandatory human review.
 
 ## Known limits
 
-- The question is sent raw (unmasked) to the embeddings and LLM providers. Next control: mask before the provider.
 - The `rate_limit_exceeded` log records the client IP in clear (`app/main.py:127`, `:162`).
 - The `to` field of `operational_outbox.payload_sanitized` keeps the phone in clear, and the code has no outbox purge.
 - The staff remember cookie carries the E.164 phone in clear.
