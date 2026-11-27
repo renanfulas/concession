@@ -72,9 +72,9 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 968 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
-| Evals `concessoes-manutencao` (base + confinamento) | 27/27 |
-| Evals `lgpd-titular` (base + confinamento) | 26/26 |
+| Testes automatizados (`python -m pytest`) | 1048 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
+| Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
+| Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
 | Gravacao da prioridade no ticket contra PostgreSQL real | nao verificada nesta copia (suite de integracao precisa de Docker) |
 | Tela web do console (`/team`) | nao existe; o console e uma API |
@@ -212,9 +212,9 @@ translated.
 
 ### Status and limits
 
-The status table above applies as is. In short: 949 tests pass (44 skipped
+The status table above applies as is. In short: 1048 tests pass (44 skipped
 PostgreSQL integration tests need a database), and the domain evals pass
-(27/27 maintenance, 26/26 data subject, 20/20 reference domain). The evals run
+(30/30 maintenance, 29/29 data subject, 20/20 reference domain). The evals run
 without an LLM key, so they check retrieval, cited references, classification
 and escalation, not the quality of model-generated text. Priority persistence
 against a real PostgreSQL database is not yet verified in this copy, and the

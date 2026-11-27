@@ -73,6 +73,8 @@ handoff:
       terms:
         - bloqueio
         - banimento
+      ignore_terms:         # opcional: frases tiradas do texto antes de casar
+        - sem bloqueio
 
 sla:                        # opcional: prazos do console para este dominio
   basis: "Anexo de SLA do contrato, item 3"
@@ -114,8 +116,15 @@ feature_flags:
   `domain.is_flag_enabled("<flag>")`, que devolve `False` para flag nao declarada.
 - `escalation_rules[].priority` (opcional) define a prioridade do caso que a
   regra abre no console. Quando varias regras casam, vale a maior; sem
-  prioridade declarada o caso fica `normal`. Codigo:
+  prioridade declarada o caso fica `normal`. Motivo de seguranca do nucleo
+  (`sensitive_topic`, `secret_request`, `card_data`, `prompt_injection_attempt`)
+  sobe o piso para `normal`: uma regra `low` nao rebaixa o caso. Codigo:
   `app.handoff.taxonomy.resolve_case_priority`.
+- `escalation_rules[].ignore_terms` (opcional) sao frases removidas da mensagem
+  antes de testar os `terms` daquela regra, para um termo com outro sentido nao
+  disparar a regra ("sem risco" nao vira `risco_seguranca`). Remover a frase nao
+  esconde outro termo da mesma mensagem ("fio exposto, sem risco?" continua
+  urgente). Todo `ignore_terms` novo pede um caso negativo no eval do dominio.
 - `sla` (opcional) sobrescreve, para os casos deste dominio, os minutos do SLA
   global (`SUPPORT_SLA_MINUTES_*`) nas prioridades declaradas; as demais herdam
   o global. `basis` diz de onde vem o prazo (clausula de contrato, artigo de lei)
