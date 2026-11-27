@@ -67,12 +67,20 @@ from app.support.whatsapp_bridge import (
 )
 from app.domain_engine.loader import DomainLoader
 from app.support.dev_login import DEMO_STAFF_PHONE, dev_login_allowed
+from app.support.monthly_report import (
+    InvalidMonth,
+    build_report_rows,
+    month_bounds,
+    render_csv,
+)
 from app.support.sla import (
     COLOR_FILTERS,
+    LATE_REASONS,
     DomainSla,
     SlaAssessment,
     compute_sla,
     domain_sla_overrides,
+    frozen_case_sla,
     matches_color_filter,
     sort_by_attention,
 )
@@ -85,6 +93,8 @@ from app.support.staff_auth import (
 from app.support.transitions import (
     CaseNotFound,
     InvalidTransition,
+    LateReasonNotApplicable,
+    LateReasonRequired,
     SupportCaseTransitionService,
 )
 from app.web_auth.service import InvalidOrExpiredCode
@@ -552,7 +562,12 @@ def get_console_case(
                     db_now,
                     settings,
                     waiting_seconds=waiting_seconds,
-                    domain_sla=_domain_sla_overrides(settings).get(context.domain),
+                    domain_sla=frozen_case_sla(
+                        context.priority,
+                        context.sla_minutes,
+                        context.sla_basis,
+                        _domain_sla_overrides(settings).get(context.domain),
+                    ),
                 ),
             )
         events = repository.get_case_events(case_id)
@@ -607,9 +622,19 @@ def transition_console_case(
             action=payload.action,
             actor_staff_id=principal.staff_id,
             note=payload.note,
+            late_reason=payload.late_reason,
         )
     except CaseNotFound as exc:
         raise HTTPException(status_code=404, detail="support_case_not_found") from exc
+    except LateReasonRequired as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "late_reason_required", "late_reasons": list(LATE_REASONS)},
+        ) from exc
+    except LateReasonNotApplicable as exc:
+        raise HTTPException(
+            status_code=422, detail={"code": "late_reason_not_applicable"}
+        ) from exc
     except InvalidTransition as exc:
         raise HTTPException(
             status_code=409,
@@ -629,10 +654,12 @@ def transition_console_case(
         from_status=result.from_status,
         to_status=result.to_status,
         actor_staff_id=principal.staff_id,
+        late_reason=result.late_reason,
     )
     return StaffTransitionResponse(
         case_id=result.case_id,
         status=result.to_status,
+        late_reason=result.late_reason,
         assignee=(
             ConsoleAssigneeResponse(display_name=result.assignee_display_name)
             if result.assignee_display_name
@@ -732,6 +759,66 @@ def send_console_case_message(
     )
 
 
+@router.get("/reports/monthly.csv")
+def export_monthly_report(
+    request: Request,
+    month: str = Query(..., max_length=7),
+    domain: str | None = Query(default=None, max_length=80),
+    principal: StaffPrincipal = Depends(require_staff_session),
+) -> Response:
+    """Monthly CSV for the auditor: one row per case opened in the month.
+
+    No personal data leaves through this route (see
+    ``app/support/monthly_report.py``).
+    """
+
+    settings = request.app.state.settings
+    timezone_name = settings.support_console_timezone
+    try:
+        start, end = month_bounds(month, timezone_name)
+    except InvalidMonth as exc:
+        raise HTTPException(status_code=422, detail="invalid_month") from exc
+
+    repository = SupportCaseRepository(request.app.state.database_runtime)
+    try:
+        cases, db_now, truncated = repository.list_cases_opened_between(
+            start=start, end=end, domain=domain
+        )
+    except DatabaseUnavailableError as exc:
+        raise HTTPException(
+            status_code=503, detail="support_inbox_storage_unavailable"
+        ) from exc
+
+    body = render_csv(
+        build_report_rows(
+            cases,
+            db_now=db_now,
+            settings=settings,
+            domain_sla=_domain_sla_overrides(settings),
+            timezone_name=timezone_name,
+        )
+    )
+    log_event(
+        logger,
+        "support_console_report_exported",
+        request_id=get_request_id(request),
+        month=month,
+        domain_present=domain is not None,
+        row_count=len(cases),
+        truncated=truncated,
+    )
+    suffix = f"-{domain}" if domain else ""
+    return Response(
+        content=body.encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="relatorio-mensal-{month}{suffix}.csv"',
+            "Cache-Control": "no-store",
+            "X-Report-Truncated": "true" if truncated else "false",
+        },
+    )
+
+
 @router.get("/metrics", response_model=ConsoleMetricsResponse)
 def get_console_metrics(
     request: Request,
@@ -791,7 +878,9 @@ def _assess(
         db_now,
         settings,
         waiting_seconds=case.waiting_seconds,
-        domain_sla=(overrides or {}).get(case.domain),
+        domain_sla=frozen_case_sla(
+            case.priority, case.sla_minutes, case.sla_basis, (overrides or {}).get(case.domain)
+        ),
     )
 
 

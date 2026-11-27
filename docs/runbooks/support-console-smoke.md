@@ -58,6 +58,12 @@ Executar na origem do backend (ou via proxy `/web/*`), guardando os
     pausado na fila, SLA nao vermelho) → `resume` → `close` (`closed_at`
     preenchido); `GET /web/support/cases/{case_id}` mostra o bloco `events`
     com a sequencia completa.
+11. **Relatorio mensal**: `close` num caso ja vermelho sem `late_reason` ->
+    `422 late_reason_required` com a lista de codigos; com
+    `{"action": "close", "late_reason": "aguardando_peca"}` -> `200`.
+    `GET /web/support/reports/monthly.csv?month=AAAA-MM` (ou "Baixar CSV" na
+    `/team`) baixa o CSV; conferir que nao ha telefone, nome, e-mail nem
+    resumo, e que o caso aparece com `fora_do_prazo` e `aguardando_peca`.
 11. **Metricas (Fase C)**: `GET /web/support/metrics?window=14d` → `200`;
     conferir `backlog.by_color` batendo com a fila atual, `throughput` com
     14 dias (zero-fillado), `feedback.helpful_rate` e `unknown_domain_count`,

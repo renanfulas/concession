@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 from app.db.runtime import DatabaseRuntime
 from app.support.repository import SupportCaseRepository
-from app.support.sla import DomainSla, compute_sla
+from app.support.sla import DomainSla, compute_sla, frozen_case_sla
 
 
 WINDOW_DAYS = {"14d": 14, "30d": 30}
@@ -84,7 +84,9 @@ def build_backlog_metrics(
             active.db_now,
             settings,
             waiting_seconds=case.waiting_seconds,
-            domain_sla=overrides.get(case.domain),
+            domain_sla=frozen_case_sla(
+                case.priority, case.sla_minutes, case.sla_basis, overrides.get(case.domain)
+            ),
         )
         bucket = "paused" if sla.paused else sla.color
         by_color[bucket] = by_color.get(bucket, 0) + 1

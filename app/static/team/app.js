@@ -590,4 +590,11 @@ el("filter-color").addEventListener("change", refreshQueue);
 el("refresh-button").addEventListener("click", refreshQueue);
 el("filters").addEventListener("submit", (event) => event.preventDefault());
 
+// Relatorio mensal: GET simples para /web/support/reports/monthly.csv (o
+// cookie da sessao vai junto pelo path). Comeca no mes corrente.
+(function initReportMonth() {
+  const now = new Date();
+  el("report-month").value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+})();
+
 boot();

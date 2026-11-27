@@ -117,12 +117,23 @@ class StaffTransitionRequest(BaseModel):
         "claim", "release", "wait_customer", "resume", "close", "cancel"
     ]
     note: str | None = Field(default=None, max_length=1000)
+    # Migration 020: required when ``close`` happens after the deadline;
+    # rejected otherwise. Closed list (``app.support.sla.LATE_REASONS``).
+    late_reason: Literal[
+        "aguardando_peca",
+        "acesso_ao_local",
+        "dependencia_externa",
+        "volume_acima_da_capacidade",
+        "classificacao_revista",
+        "outro",
+    ] | None = None
 
 
 class StaffTransitionResponse(BaseModel):
     case_id: str
     status: str
     assignee: ConsoleAssigneeResponse | None = None
+    late_reason: str | None = None
 
 
 class ConsoleCaseMessageRequest(BaseModel):

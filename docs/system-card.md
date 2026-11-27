@@ -91,6 +91,8 @@ Suggested rating: **medium risk**, mandatory human review.
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193", "nunca pede senha", "4 horas" (incident) and "24 horas" (auditor notice) even without an LLM |
 | Development login limited to the local machine | `ENABLE_TEAM_DEV_LOGIN` (default `false`), `app/support/dev_login.py`: refuses to boot without an explicit `APP_ENV=development`; needs a loopback peer and `Host`; refuses proxy headers | `tests/test_team_dev_login.py` |
+| Monthly report with no personal data | `app/support/monthly_report.py`, `GET /web/support/reports/monthly.csv` (staff session) | `tests/test_monthly_report.py` (no phone, name, e-mail, summary or `request_id` column; formula injection neutralized) |
+| Late reason from a closed list | `late_reason` required when closing after the deadline; database `CHECK`, no free text | `tests/test_monthly_report.py`, `tests/integration/test_monthly_report_postgres.py` |
 | Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
 | Masking before the provider | the question goes through the same masking before the embedding query and the LLM prompt; local detection (card, secret) uses the original text | `tests/test_provider_masking.py` |
 | Logs without tokens or raw `session_id`; PII only in the exceptions listed under "Known limits" | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |

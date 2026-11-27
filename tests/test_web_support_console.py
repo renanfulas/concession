@@ -899,3 +899,128 @@ def test_console_flag_requires_hash_secrets(
 
     with pytest.raises(ValueError):
         Settings()
+
+
+# --------------------------------------------------------------------------- #
+# Relatorio mensal e motivo do atraso (migration 020)
+# --------------------------------------------------------------------------- #
+
+
+def _late_case_row() -> tuple:
+    # urgent com prazo gravado de 4h, aberto ha 6h: fechar agora e atraso.
+    return (
+        "in_progress",
+        "staff-1",
+        "urgent",
+        DB_NOW - timedelta(hours=6),
+        240,
+        "Anexo (demo), item 3.1",
+        "concessoes-manutencao",
+        DB_NOW,
+    )
+
+
+def test_closing_late_without_reason_returns_422_with_the_codes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with _console_client(monkeypatch) as (client, app):
+        _seed_staff(app)
+        _login(client, app)
+        app.state.database_runtime = FakeRuntime(
+            FakeCursor(fetchone_results=[_late_case_row()], fetchall_results=[[]])
+        )
+        response = client.post(
+            "/web/support/cases/case-1/transition",
+            json={"action": "close"},
+            headers=CSRF_HEADERS,
+        )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail["code"] == "late_reason_required"
+    assert "aguardando_peca" in detail["late_reasons"]
+
+
+def test_closing_late_with_reason_returns_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    with _console_client(monkeypatch) as (client, app):
+        _seed_staff(app, display_name="Atendente Demo 1")
+        _login(client, app)
+        app.state.database_runtime = FakeRuntime(
+            FakeCursor(
+                fetchone_results=[_late_case_row(), ("Atendente Demo 1",), (None, None, None)],
+                fetchall_results=[[]],
+            )
+        )
+        response = client.post(
+            "/web/support/cases/case-1/transition",
+            json={"action": "close", "late_reason": "acesso_ao_local"},
+            headers=CSRF_HEADERS,
+        )
+
+    assert response.status_code == 200
+    assert response.json()["late_reason"] == "acesso_ao_local"
+
+
+def test_free_text_late_reason_is_rejected_by_the_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with _console_client(monkeypatch) as (client, app):
+        _seed_staff(app)
+        _login(client, app)
+        response = client.post(
+            "/web/support/cases/case-1/transition",
+            json={"action": "close", "late_reason": "o tecnico do bairro X atrasou"},
+            headers=CSRF_HEADERS,
+        )
+    assert response.status_code == 422
+
+
+def test_monthly_report_requires_staff_session(monkeypatch: pytest.MonkeyPatch) -> None:
+    with _console_client(monkeypatch) as (client, _app):
+        response = client.get("/web/support/reports/monthly.csv?month=2026-07")
+    assert response.status_code == 401
+
+
+def test_monthly_report_rejects_malformed_month(monkeypatch: pytest.MonkeyPatch) -> None:
+    with _console_client(monkeypatch) as (client, app):
+        _seed_staff(app)
+        _login(client, app)
+        response = client.get("/web/support/reports/monthly.csv?month=2026-7")
+    assert response.status_code == 422
+
+
+def test_monthly_report_exports_csv_without_personal_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    opened = DB_NOW - timedelta(days=1)
+    row = (
+        "case-1",
+        "concessoes-manutencao",
+        "web",
+        "closed",
+        "urgent",
+        ["risco_seguranca"],
+        opened,
+        opened + timedelta(hours=6),
+        240,
+        "Anexo (demo), item 3.1",
+        "aguardando_peca",
+        DB_NOW,
+    )
+    with _console_client(monkeypatch) as (client, app):
+        _seed_staff(app)
+        _login(client, app)
+        app.state.database_runtime = FakeRuntime(
+            FakeCursor(fetchone_results=[], fetchall_results=[[row], []])
+        )
+        response = client.get("/web/support/reports/monthly.csv?month=2026-07")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert 'filename="relatorio-mensal-2026-07.csv"' in response.headers["content-disposition"]
+    assert response.headers["cache-control"] == "no-store"
+    lines = response.content.decode("utf-8").lstrip("﻿").splitlines()
+    assert lines[0].startswith("caso_id;dominio;canal;motivos;prioridade")
+    assert "case-1;concessoes-manutencao;web;risco_seguranca;urgent;closed" in lines[1]
+    assert lines[1].endswith("fora_do_prazo;aguardando_peca")
+    assert STAFF_PHONE not in response.text
