@@ -30,7 +30,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
-| Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
+| Tela web do console (`/team`) | ✅ (somente leitura) | `app/static/team/`, flag `ENABLE_TEAM_UI`, login OTP staff, fila `sort=attention` com semaforo, prazo, base, filtros e refresh de 60 s; `GET /web/support/domains` para os nomes de exibicao | acoes de escrita (assumir, pausar, fechar), painel de metricas | `tests/test_team_screen.py` |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
 | Relatorio mensal para a fiscalizacao | ⬜ | metricas do console | exportacao por categoria e prazo | — |
 | Detector de CPF com digito verificador | ⬜ | mascaramento de cartao, CNPJ, e-mail, telefone, IP | CPF explicito (hoje provavelmente cai na regra de telefone) | — |

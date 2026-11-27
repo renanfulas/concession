@@ -32,6 +32,8 @@ from app.api.schemas.web_support import (
     ConsoleCaseMessageRequest,
     ConsoleCaseMessageResponse,
     ConsoleCaseSummaryResponse,
+    ConsoleDomainListResponse,
+    ConsoleDomainResponse,
     ConsoleMetricsResponse,
     ConsoleSlaResponse,
     StaffLoginResponse,
@@ -325,6 +327,28 @@ def logout_staff_session(
     if forget_device:
         response.delete_cookie(STAFF_HINT_COOKIE, path=STAFF_HINT_COOKIE_PATH)
     return StaffLogoutResponse()
+
+
+@router.get("/domains", response_model=ConsoleDomainListResponse)
+def list_console_domains(
+    request: Request,
+    principal: StaffPrincipal = Depends(require_staff_session),
+) -> ConsoleDomainListResponse:
+    """Nome de exibicao de cada dominio carregado, para rotulos e filtro da fila.
+
+    Somente leitura e sem banco: vem do ``domain.yaml`` de cada dominio.
+    """
+
+    loader = DomainLoader(request.app.state.settings.domains_path)
+    domains = [
+        ConsoleDomainResponse(name=config.name, display_name=config.display_name)
+        for config in (loader.load(name) for name in loader.list_domains())
+        if config is not None
+    ]
+    return ConsoleDomainListResponse(
+        request_id=get_request_id(request),
+        domains=domains,
+    )
 
 
 @router.get("/cases", response_model=ConsoleCaseListResponse)

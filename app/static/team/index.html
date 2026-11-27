@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Fila do time · concession</title>
+    <link rel="stylesheet" href="/team-assets/styles.css" />
+  </head>
+  <body>
+    <div class="demo-banner" role="note">
+      <strong>Ambiente de demonstração.</strong>
+      Contrato, prazos, ativos e casos são fictícios. Tela somente leitura.
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>Fila do time</h1>
+          <p class="brand-sub">Console de atendimento · semáforo de SLA</p>
+        </div>
+      </div>
+      <div id="session-box" class="session-box" hidden>
+        <span id="session-name" class="session-name"></span>
+        <button id="logout-button" type="button" class="button-ghost">Sair</button>
+      </div>
+    </header>
+
+    <main id="main" class="main" aria-live="polite">
+      <section id="view-loading" class="panel">
+        <p>Carregando o console…</p>
+      </section>
+
+      <section id="view-unavailable" class="panel panel-state" hidden>
+        <h2>Console indisponível</h2>
+        <p id="unavailable-detail">
+          A API do console não respondeu. Pode estar desligada nesta instância
+          ou sem banco de dados.
+        </p>
+        <button id="retry-button" type="button" class="button-primary">
+          Tentar de novo
+        </button>
+      </section>
+
+      <section id="view-login" class="panel panel-narrow" hidden>
+        <h2>Entrar no console</h2>
+        <p class="muted">
+          Acesso só para operadores cadastrados. O código chega pelo WhatsApp do
+          número cadastrado.
+        </p>
+
+        <div id="hint-box" class="hint-box" hidden>
+          <button id="hint-button" type="button" class="button-primary"></button>
+          <button id="other-number-button" type="button" class="button-link">
+            Entrar com outro número
+          </button>
+        </div>
+
+        <form id="phone-form" class="stack" autocomplete="off" novalidate>
+          <label for="phone-input">Telefone com DDI e DDD</label>
+          <input
+            id="phone-input"
+            name="phone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="off"
+            maxlength="20"
+            placeholder="+5511900000000"
+            required
+          />
+          <button id="phone-submit" type="submit" class="button-primary">
+            Receber código
+          </button>
+        </form>
+
+        <form id="code-form" class="stack" autocomplete="off" novalidate hidden>
+          <p class="muted">
+            Se o número estiver cadastrado, um código foi enviado pelo WhatsApp.
+          </p>
+          <label for="code-input">Código de acesso</label>
+          <input
+            id="code-input"
+            name="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            minlength="4"
+            maxlength="10"
+            pattern="[0-9]*"
+            required
+          />
+          <button id="code-submit" type="submit" class="button-primary">Entrar</button>
+          <button id="code-back" type="button" class="button-link">Voltar</button>
+        </form>
+
+        <p id="login-message" class="form-message" role="alert" hidden></p>
+      </section>
+
+      <section id="view-queue" hidden>
+        <div class="toolbar">
+          <form id="filters" class="filters" aria-label="Filtros da fila">
+            <label>
+              <span>Domínio</span>
+              <select id="filter-domain" name="domain">
+                <option value="">Todos</option>
+              </select>
+            </label>
+            <label>
+              <span>Semáforo</span>
+              <select id="filter-color" name="color">
+                <option value="">Todos</option>
+                <option value="red">Vermelho · estourado</option>
+                <option value="yellow">Amarelo · atenção</option>
+                <option value="green">Verde · no prazo</option>
+                <option value="paused">Pausado</option>
+              </select>
+            </label>
+          </form>
+          <div class="refresh">
+            <span id="updated-at" class="muted">Ainda não atualizado</span>
+            <button id="refresh-button" type="button" class="button-ghost">
+              Atualizar agora
+            </button>
+          </div>
+        </div>
+
+        <p id="queue-notice" class="notice" role="status" hidden></p>
+
+        <p class="muted legend">
+          Ordem de atenção: vermelho, amarelo e verde, e dentro de cada cor o prazo
+          mais próximo primeiro; pausados por último. Atualiza sozinha a cada 60
+          segundos.
+        </p>
+
+        <ol id="case-list" class="case-list" aria-label="Casos ativos"></ol>
+        <p id="queue-empty" class="panel panel-state" hidden>
+          Nenhum caso ativo com esses filtros.
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Somente leitura: assumir, pausar e fechar casos continuam pela API do
+        console. Horários no fuso America/Sao_Paulo.
+      </p>
+    </footer>
+
+    <script src="/team-assets/app.js" defer></script>
+  </body>
+</html>

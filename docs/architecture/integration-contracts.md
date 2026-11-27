@@ -951,7 +951,8 @@ Status: Fase A (auth OTP staff dedicado + fila com semaforo, leitura), Fase B
 router so e montado quando `ENABLE_SUPPORT_CONSOLE=true` — com a flag
 desligada a superficie inteira (inclusive auth) nem existe (fora do OpenAPI,
 `404` do FastAPI), e as rotas ainda checam a flag como defesa em profundidade.
-Consumidor: uma area interna `/team` same-origin (ainda nao existe nesta copia) — nenhum
+Consumidor: a tela interna `/team` same-origin (somente leitura, `app/static/team/`,
+flag `ENABLE_TEAM_UI`) — nenhum
 segredo, nenhum `X-API-Key`, nenhum telefone bruto no JS do cliente.
 
 ```text
@@ -959,6 +960,7 @@ POST /web/support/auth/start
 POST /web/support/auth/confirm
 GET  /web/support/auth/session
 POST /web/support/auth/logout
+GET  /web/support/domains
 GET  /web/support/cases
 GET  /web/support/cases/{case_id}
 POST /web/support/cases/{case_id}/transition
@@ -996,6 +998,11 @@ Autenticacao (OTP WhatsApp dedicado, staff nao e cliente):
 - `POST /web/support/auth/logout` — body opcional
   `{ "forget_device": true }` remove tambem o lembrete; sem isso o lembrete
   sobrevive ao logout. Apaga a linha da sessao e expira o cookie.
+
+`GET /web/support/domains` (exige sessao staff valida; sem banco): lista
+`{ request_id, domains: [{ name, display_name }] }` a partir do `domain.yaml`
+de cada dominio carregado. Serve os rotulos e o filtro de dominio da tela
+`/team`; nao expoe nenhum outro campo do contrato do dominio.
 
 `GET /web/support/cases` (fila com semaforo; exige sessao staff valida):
 

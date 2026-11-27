@@ -64,14 +64,37 @@ Executar na origem do backend (ou via proxy `/web/*`), guardando os
     `response_times` (`null` se ainda nao houver caso fechado/com acao na
     janela); `?window=7d` → `422 invalid_window`.
 
-## Smoke pela UI (`/team`, quando existir)
+## Smoke pela UI (`/team`, somente leitura)
 
-A tela `/team` ainda nao existe nesta copia. Quando for construida,
-repetir os passos 2-11 pela interface: login com codigo de 6 celulas, botao
-"Entrar como <nome>" no segundo acesso, fila com semaforo e filtros, detalhe,
-"entrar com outro numero" e "esquecer este dispositivo", botoes de transicao
-com confirmacao, filtro "meus casos" e o painel de metricas com as quatro
-visoes.
+Como abrir:
+
+1. `ENABLE_TEAM_UI` vazio liga a tela em `APP_ENV=development`; fora de
+   desenvolvimento, `ENABLE_TEAM_UI=true`. `ENABLE_TEAM_UI=false` devolve
+   `404` em `/team` e `/team-assets/*`.
+2. Para ver dados, a API do console precisa estar ligada
+   (`ENABLE_SUPPORT_CONSOLE=true`, com os pre-requisitos acima). Sem ela, ou
+   sem banco, a tela mostra "Console indisponivel" e o botao "Tentar de novo".
+3. `uvicorn app.main:app --reload` e abrir `http://127.0.0.1:8000/team`.
+
+O que conferir (passos 2-7 pela interface):
+
+- faixa "Ambiente de demonstracao" no topo;
+- login: telefone -> "Receber codigo" -> codigo -> "Entrar"; codigo errado
+  mostra "Codigo invalido ou expirado"; no segundo acesso aparece
+  "Entrar como <nome>" e "Entrar com outro numero"; "Sair" encerra a sessao;
+- fila em ordem de atencao com semaforo em texto (Vermelho · estourado,
+  Amarelo · atencao, Verde · no prazo, Pausado), prioridade, dominio pelo nome
+  de exibicao, prazo no fuso America/Sao_Paulo, tempo restante ou estourado,
+  base do prazo (`sla.basis`, ou "SLA padrao do console"), status, responsavel
+  e referencia curta do caso; "Detalhes" abre explicacao do prazo, datas,
+  canal, motivos e o resumo ja mascarado;
+- filtros de dominio e semaforo usam `domain` e `color` da API;
+- "Atualizado as HH:MM" muda a cada 60 s.
+
+A tela nao tem acoes de escrita: assumir, pausar, retomar e fechar (passos
+9-10) e as metricas (passo 11) continuam pela API. Cabecalhos: CSP
+`default-src 'none'` com `script-src 'self'` e `connect-src 'self'`,
+`X-Frame-Options: DENY`, `nosniff`, `no-referrer`, `no-store`.
 
 ## Promocao a producao
 
