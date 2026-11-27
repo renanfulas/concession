@@ -252,6 +252,26 @@ Regras operacionais:
 - `confidence` e `domain` continuam internos ao backend e nao fazem parte do contrato publico V0
 - se `escalated=true`, a UI deve tratar isso como sinal de revisao humana ou necessidade de continuidade operacional, nao como falha silenciosa
 
+Escolha do dominio (mesmo roteador do WhatsApp):
+
+- `ENABLE_WEB_DOMAIN_ROUTER=true` (padrao): a mensagem passa pelo
+  `DomainRouter` com os dominios de `WHATSAPP_ROUTER_DOMAINS`, com a mesma
+  memoria pegajosa por sessao (`SessionDomainStore`, chave
+  `web:<hash do cookie>`, nunca o cookie bruto). Ex.: "Quero excluir meus
+  dados" -> `lgpd-titular`; "Tem fio exposto no abrigo" ->
+  `concessoes-manutencao`; o proximo turno sem palavra-chave fica no dominio
+  escolhido.
+- turno sem dominio (saudacao, empate, `menu`): responde a saudacao
+  institucional e depois a pergunta de esclarecimento, sem chamar o motor de
+  resposta e sem gravar auditoria; `escalated=false`, `references=[]`,
+  `request_id`/`support_code` presentes. Log `web_chat_routing` com
+  `routing_status=routing_menu`.
+- escolha so por numero ("2", "opcao 2"): responde o `welcome_message` do
+  dominio e vincula a sessao (`routing_status=routing_selected`).
+- `ENABLE_WEB_DOMAIN_ROUTER=false`: todo turno e respondido por
+  `DEFAULT_DOMAIN` (comportamento anterior). O formato da resposta nao muda
+  em nenhum dos modos.
+
 Fronteira de responsabilidade:
 
 - esta fachada publica nao substitui `/chat` ou webhooks dedicados para Meta
@@ -1722,7 +1742,13 @@ Contrato:
   `WHATSAPP_ROUTER_DOMAINS` com 2+ dominios validos, na ordem de selecao
   (`1`, `2`, ...).
 - selecao explicita por numero (`1`, `2`) ou pelo nome da opcao (`manutencao`,
-  `privacidade`) segue funcionando como atalho e escolhe o dominio.
+  `privacidade`) segue funcionando como atalho e escolhe o dominio. O numero so
+  conta quando e a mensagem inteira (espacos e pontuacao ignorados, com
+  `opcao`/`opção`/`option` opcional antes): "2", "opcao 2" e " 2. " escolhem;
+  "O relogio da Rua 2 esta apagado" nao escolhe e segue para palavra-chave.
+- o `/web/chat` usa o mesmo roteador e as mesmas regras, com chave propria
+  (`ENABLE_WEB_DOMAIN_ROUTER`, ligada por padrao); ver a secao
+  `POST /web/chat`.
 - sem selecao, a mensagem e pontuada contra `routing.keywords` de cada dominio
   (match por palavra inteira, acentos normalizados); o melhor unico vence.
 - saudacao, texto vazio, empate ou nenhum match -> o transporte NAO chama o

@@ -28,7 +28,8 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | SLA por dominio (`sla:` no `domain.yaml`) | ✅ | override por prioridade, `basis` na resposta do console, lista, detalhe e metricas | — | `tests/test_support_sla.py`, `tests/test_web_support_console.py` |
 | Prioridade do caso por regra | ✅ codigo · 🟡 banco | `escalation_rules[].priority`, `resolve_case_priority`, coluna `priority` no INSERT | rodar a suite de integracao PostgreSQL (`docker-compose.test.yml`) para provar o INSERT | `tests/test_concessoes_domain.py`; integracao nao rodada nesta copia |
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
-| Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
+| Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu; numero so escolhe opcao quando e a mensagem inteira ("2", "opcao 2"), nunca "Rua 2" | nome da opcao ("manutencao", "privacidade") dentro de frase ainda conta como escolha e devolve so o welcome | `tests/test_domain_router.py` |
+| Entradas da demo sem `.env` | ✅ | `DEFAULT_DOMAIN` padrao e `concessoes-manutencao` (fonte unica em `Settings`, lida pelo health); `/web/chat` usa o mesmo roteador e memoria pegajosa do WhatsApp (`ENABLE_WEB_DOMAIN_ROUTER=true` por padrao) | — | `tests/test_web_chat.py`, `tests/test_health_readiness.py` |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
