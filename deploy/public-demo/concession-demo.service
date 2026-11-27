@@ -15,7 +15,9 @@ WorkingDirectory=/opt/concession-demo/current
 EnvironmentFile=/etc/concession-demo/demo.env
 # Um worker so: o rate limit do chat e em memoria. --proxy-headers faz o IP
 # real do visitante (X-Forwarded-For do Caddy local) valer para o rate limit.
-ExecStart=/opt/concession-demo/current/.venv/bin/uvicorn app.main:app --app-dir /opt/concession-demo/current --host 127.0.0.1 --port 8095 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-server-header
+# --no-access-log: o access log do uvicorn gravaria esse IP em claro; os
+# eventos estruturados do app ja levam so o hash (client_host_hash).
+ExecStart=/opt/concession-demo/current/.venv/bin/uvicorn app.main:app --app-dir /opt/concession-demo/current --host 127.0.0.1 --port 8095 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-server-header --no-access-log
 Restart=on-failure
 RestartSec=5
 MemoryMax=1G
