@@ -43,7 +43,7 @@ Does not:
 | Data | Where | Handling | Legal basis (LGPD art. 7) |
 | --- | --- | --- | --- |
 | Phone number | channel identity, OTP | stored as HMAC hash and last 4 digits; full number only when the citizen authorizes contact | public service contract execution; legitimate interest |
-| Message text | conversations and tickets | masked before persistence (card, CNPJ, e-mail, phone, IP); `app/core/persistence_sanitize.py` | same |
+| Message text | conversations and tickets | masked before persistence (CPF with check digits, card, e-mail, phone and other long digit runs, IP); ISO dates and labeled protocol numbers stay readable for the audit trail; `app/core/persistence_sanitize.py` | same |
 | Session identifier | short history | only the hash reaches database and logs | same |
 | OTP code | identity verification | digest only; expires | legal obligation (serving the data subject safely) |
 | Asset code and address | maintenance ticket | operational, not personal | — |
@@ -71,9 +71,10 @@ Suggested rating: **medium risk**, mandatory human review.
 | Control | Where | Evidence |
 | --- | --- | --- |
 | Scope, prompt and secret confinement | `docs/security/llm-confinement.md`, `domains/*/evals/confinement/` | confinement evals 33/33 |
-| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals 20/20 across both domains |
+| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals 26/26 across both domains, including negative cases (term present with another meaning) |
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
-| Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_privacy.py` |
+| Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193" and "nunca pede senha" even without an LLM |
+| Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
 | Logs without PII, tokens or raw `session_id` | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
 | Consent before direct contact | consent gate on tickets | web handoff tests |
 | Traceability | `request_id` on every response; audited case events | `tests/test_request_observability.py` |
@@ -83,8 +84,9 @@ Suggested rating: **medium risk**, mandatory human review.
 ## Known limits
 
 - Without an LLM key, evals check retrieval, classification and handoff, not generated text quality.
-- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue.
-- No dedicated CPF detector with check digits.
+- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue. Known false positives are handled with per-rule `ignore_terms` and proven by negative eval cases; words in between the terms ("relogio REL-0423 esta apagado") still do not match.
+- A protocol number without a label ("protocolo", "chamado", "ticket", "OS", "ordem de servico") or shorter than 13 digits is still masked: when in doubt, a number is treated as personal data. A protocol that passes the card checksum (Luhn) becomes `[REDACTED_CARD]`.
+- Known masking limits: a phone glued to letters (`telefone11...`) is not caught; a formatted CNPJ is only partly masked; an ISO birth date stays readable (dd/mm/yyyy already did).
 - Writing the case priority to a real PostgreSQL was not verified in this copy.
 - No web UI for the console; the console is an API.
 

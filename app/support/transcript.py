@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.persistence_sanitize import REDACTION_VERSION
+from app.core.persistence_sanitize import READABLE_REDACTION_VERSIONS
 from app.support.context import (
     SNAPSHOT_MAX_TURNS,
     build_snapshot_context,
@@ -54,13 +54,18 @@ def fetch_conversation_transcript(
             FROM messages m
             WHERE m.conversation_id = %s
               AND m.role = ANY(%s)
-              AND m.redaction_version = %s
+              AND m.redaction_version = ANY(%s)
             ORDER BY m.message_sequence DESC
             LIMIT %s
         ) sub
         ORDER BY sub.message_sequence ASC
         """,
-        (conversation_id, list(TRANSCRIPT_ROLES), REDACTION_VERSION, limit),
+        (
+            conversation_id,
+            list(TRANSCRIPT_ROLES),
+            list(READABLE_REDACTION_VERSIONS),
+            limit,
+        ),
     )
     rows = cursor.fetchall()
     return [
@@ -88,9 +93,13 @@ def count_conversation_turns(cursor: Any, conversation_id: Any) -> int:
         FROM messages m
         WHERE m.conversation_id = %s
           AND m.role = ANY(%s)
-          AND m.redaction_version = %s
+          AND m.redaction_version = ANY(%s)
         """,
-        (conversation_id, list(TRANSCRIPT_ROLES), REDACTION_VERSION),
+        (
+            conversation_id,
+            list(TRANSCRIPT_ROLES),
+            list(READABLE_REDACTION_VERSIONS),
+        ),
     )
     row = cursor.fetchone()
     return int(row[0]) if row and row[0] is not None else 0

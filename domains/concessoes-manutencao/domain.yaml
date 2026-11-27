@@ -94,6 +94,8 @@ handoff:
   escalation_rules:
     - reason: risco_seguranca
       priority: urgent
+      # Texto fixo, mostrado antes de qualquer resposta (inclusive sem LLM).
+      notice: "Seguranca primeiro: mantenha distancia do equipamento e nao toque em fios, vidro ou estrutura solta. Se houver risco imediato (fogo, faisca, fumaca ou alguem ferido), ligue 193 (Corpo de Bombeiros)."
       terms:
         - fio exposto
         - fiacao exposta
@@ -109,6 +111,19 @@ handoff:
         - pedacos de vidro
         - se cortar
         - risco
+      # "risco" sozinho casa por substring; estas frases saem do texto antes,
+      # para "banco solto, sem risco" ou "risco de multa" nao virarem urgente.
+      # Outro termo da mesma frase continua valendo ("fio exposto, sem risco?").
+      ignore_terms:
+        - sem risco
+        - sem nenhum risco
+        - nenhum risco
+        - nao ha risco
+        - nao tem risco
+        - nao oferece risco
+        - risco de multa
+        - risco de penalidade
+        - risco de notificacao
     - reason: notificacao_fiscalizacao
       priority: high
       terms:
@@ -126,7 +141,10 @@ handoff:
         - tela preta
         - tela quebrada
         - painel apagado
+        - painel esta apagado
         - relogio apagado
+        - relogio esta apagado
+        - tela esta apagada
         - sem imagem
         - nao liga
         - piscando
@@ -139,6 +157,17 @@ handoff:
         - temperatura errada
         - atrasado
         - adiantado
+      # "atrasado" fala do relogio, nao do atendimento.
+      ignore_terms:
+        - tecnico atrasado
+        - tecnico esta atrasado
+        - atendimento atrasado
+        - atendimento esta atrasado
+        - conserto atrasado
+        - conserto esta atrasado
+        - chamado atrasado
+        - chamado esta atrasado
+        - prazo atrasado
     - reason: conservacao_limpeza
       priority: low
       # Casamento por substring: "picha" cobre pichacao, pichado, picharam.

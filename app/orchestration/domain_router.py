@@ -7,7 +7,8 @@ channel (for example one WhatsApp number) serves more than one domain, such as
 This is a pure, deterministic, stateless seam:
 
 - an explicit selection (a number or an option name, kept as hidden shortcuts)
-  picks that domain;
+  picks that domain; a number only counts when it is the whole message
+  ("2", "opcao 2"), never when it appears inside a sentence ("Rua 2");
 - otherwise the message is scored against each domain's routing keywords and the
   unique best match wins;
 - when nothing matches (greeting, ambiguous, or a tie) the caller is told to send
@@ -51,12 +52,14 @@ class RoutableDomain:
             welcome=welcome,
         )
 
-    def _alias_tokens(self, position: int) -> set[str]:
-        # Conservative on purpose: only the menu position number, the leading word
-        # of the display name (e.g. "suporte", "vendas") and any explicit aliases.
-        # Generic display words like "vps" or "whatsapp" must NOT become selectors,
-        # otherwise they would hijack keyword routing.
-        tokens: set[str] = {str(position)}
+    def _alias_tokens(self) -> set[str]:
+        # Conservative on purpose: only the leading word of the display name
+        # (e.g. "suporte", "vendas") and any explicit aliases. Generic display
+        # words like "vps" or "whatsapp" must NOT become selectors, otherwise they
+        # would hijack keyword routing. The menu position number is NOT a token:
+        # it only counts when it is the whole message (see ``_menu_number``), so
+        # "Rua 2" or "REL 2" inside a sentence never picks the second domain.
+        tokens: set[str] = set()
         display_lead = re.split(r"[\s\-]+", fold(self.display_name).strip())
         if display_lead and len(display_lead[0]) >= 3:
             tokens.add(display_lead[0])
@@ -72,6 +75,23 @@ class RouteDecision:
     domain: str | None
     show_menu: bool
     reason: str
+
+
+_MENU_NUMBER_RE = re.compile(r"(?:(?:opcao|option)\s*)?(\d+)")
+
+
+def _menu_number(normalized: str) -> int | None:
+    """Return the menu position when the WHOLE message is a menu choice.
+
+    Accepts "2", " 2. ", "opcao 2", "opção 2" (already folded) or "option 2":
+    punctuation and surrounding spaces are ignored. A number inside a normal
+    sentence ("O relogio da Rua 2 esta apagado") is not a menu choice.
+    """
+    compact = " ".join(re.sub(r"[^\w\s]", " ", normalized).split())
+    match = _MENU_NUMBER_RE.fullmatch(compact)
+    if match is None:
+        return None
+    return int(match.group(1))
 
 
 GREETING_TEXT = (
@@ -166,9 +186,14 @@ class DomainRouter:
         return f"Perfeito! Você está no atendimento de {display}. Como posso te ajudar?"
 
     def _match_menu_selection(self, normalized: str) -> str | None:
+        number = _menu_number(normalized)
+        if number is not None:
+            if 1 <= number <= len(self.domains):
+                return self.domains[number - 1].name
+            return None
         tokens = set(re.split(r"[\s\-]+", normalized))
-        for position, domain in enumerate(self.domains, start=1):
-            alias_tokens = domain._alias_tokens(position)
+        for domain in self.domains:
+            alias_tokens = domain._alias_tokens()
             if normalized in alias_tokens or tokens & alias_tokens:
                 return domain.name
         return None
