@@ -1,16 +1,19 @@
-/* Identidade visual neutra da demo: sem marca, logo ou cores de empresa real. */
+/* Paleta: as cores do logotipo da JCDecaux (azul #004479 e azul medio #5A81AE),
+   so as cores. Nome, logo e demais elementos de marca continuam fora (CLAUDE.md). */
 :root {
-  --bg: #eef2f1;
+  --bg: #eef2f7;
   --surface: #ffffff;
-  --text: #1c2b2f;
-  --muted: #5a6b70;
-  --border: #d5dfdd;
-  --accent: #0d6b63;
+  --text: #1a2533;
+  --muted: #556274;
+  --border: #d3dce8;
+  --accent: #004479;
   --accent-text: #ffffff;
-  --banner-bg: #102a2e;
-  --banner-text: #d6ece8;
-  --maint: #0d6b63;
-  --maint-bg: #e2f1ee;
+  /* Azul medio do logotipo: so decorativo (contraste ~4:1, nao serve para texto pequeno). */
+  --accent-2: #5a81ae;
+  --banner-bg: #002a4b;
+  --banner-text: #d4e0ee;
+  --maint: #004479;
+  --maint-bg: #e3ebf4;
   --privacy: #6a3fb5;
   --privacy-bg: #efe8fb;
   --red: #b3261e;
@@ -29,17 +32,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1719;
-    --surface: #15221f;
-    --text: #d9e6e3;
-    --muted: #9db2ad;
-    --border: #2a3d39;
-    --accent: #4fc1b2;
-    --accent-text: #062320;
-    --banner-bg: #06100f;
-    --banner-text: #a8d6cf;
-    --maint: #6fd3c4;
-    --maint-bg: #183a35;
+    --bg: #0b1420;
+    --surface: #121d2b;
+    --text: #d8e2ee;
+    --muted: #9aabbf;
+    --border: #263649;
+    --accent: #9cbbe0;
+    --accent-text: #041a2e;
+    --accent-2: #7f9fc6;
+    --banner-bg: #050d17;
+    --banner-text: #a9c2de;
+    --maint: #9cbbe0;
+    --maint-bg: #13304c;
     --privacy: #c7a8f5;
     --privacy-bg: #2e2347;
     --red: #ffb4ab;
@@ -278,12 +282,12 @@ button {
   border-left-width: 6px;
   border-radius: var(--radius);
   padding: 14px 18px;
-  box-shadow: 0 1px 2px rgba(16, 42, 46, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 42, 75, 0.06);
   transition: box-shadow 0.15s ease;
 }
 
 .case-card:hover {
-  box-shadow: 0 6px 18px rgba(16, 42, 46, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 42, 75, 0.1);
 }
 
 .case-card.light-red {
@@ -405,7 +409,7 @@ button.kpi {
 }
 
 button.kpi:hover {
-  box-shadow: 0 6px 18px rgba(16, 42, 46, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 42, 75, 0.1);
 }
 
 button.kpi[aria-pressed="true"] {
@@ -454,7 +458,7 @@ button.kpi[aria-pressed="true"] {
 }
 
 .kpi-total {
-  border-top-color: var(--accent);
+  border-top-color: var(--accent-2);
 }
 
 .reasons {

@@ -1,18 +1,21 @@
-/* Identidade visual propria e ficticia da demo: sem marca, logo ou cores de
-   empresa real. Fonte do sistema, sem recurso externo. */
+/* Paleta: as cores do logotipo da JCDecaux (azul #004479 e azul medio
+   #5A81AE), so as cores. Nome, logo e demais elementos de marca continuam
+   fora (CLAUDE.md). Fonte do sistema, sem recurso externo. */
 :root {
-  --bg: #eef2f1;
-  --bg-accent: #dfe9e6;
+  --bg: #eef2f7;
+  --bg-accent: #dee7f1;
   --surface: #ffffff;
-  --surface-2: #f6f8f8;
-  --ink: #102a2e;
-  --text: #1c2b2f;
-  --muted: #5a6b70;
-  --border: #d5dfdd;
-  --brand: #0d6b63;
+  --surface-2: #f5f7fa;
+  --ink: #002a4b;
+  --text: #1a2533;
+  --muted: #556274;
+  --border: #d3dce8;
+  --brand: #004479;
   --brand-ink: #ffffff;
-  --brand-soft: #e2f1ee;
-  --user: #0d6b63;
+  --brand-soft: #e3ebf4;
+  /* Azul medio do logotipo: so decorativo (contraste ~4:1, nao serve para texto pequeno). */
+  --brand-2: #5a81ae;
+  --user: #004479;
   --user-ink: #ffffff;
   --urgent: #b42318;
   --urgent-bg: #fdecea;
@@ -25,9 +28,9 @@
   --alert-bg: #fff1ef;
   --alert-border: #f3b8b0;
   --alert-ink: #7a1a12;
-  --banner-bg: #102a2e;
-  --banner-ink: #d6ece8;
-  --shadow: 0 18px 50px rgba(16, 42, 46, 0.12);
+  --banner-bg: #002a4b;
+  --banner-ink: #d4e0ee;
+  --shadow: 0 18px 50px rgba(0, 42, 75, 0.12);
   --radius: 16px;
   --radius-sm: 10px;
   color-scheme: light;
@@ -38,18 +41,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1719;
-    --bg-accent: #10231f;
-    --surface: #15221f;
-    --surface-2: #1a2a27;
-    --ink: #e6f2ef;
-    --text: #d9e6e3;
-    --muted: #9db2ad;
-    --border: #2a3d39;
-    --brand: #4fc1b2;
-    --brand-ink: #062320;
-    --brand-soft: #183a35;
-    --user: #2f8f84;
+    --bg: #0b1420;
+    --bg-accent: #0f1d2e;
+    --surface: #121d2b;
+    --surface-2: #172436;
+    --ink: #e5edf6;
+    --text: #d8e2ee;
+    --muted: #9aabbf;
+    --border: #263649;
+    --brand: #9cbbe0;
+    --brand-ink: #041a2e;
+    --brand-soft: #13304c;
+    --brand-2: #7f9fc6;
+    --user: #2f5f8f;
     --user-ink: #ffffff;
     --urgent: #ff9b8f;
     --urgent-bg: #4a1d19;
@@ -62,8 +66,8 @@
     --alert-bg: #3a1a17;
     --alert-border: #7a3a33;
     --alert-ink: #ffd3cd;
-    --banner-bg: #06100f;
-    --banner-ink: #a8d6cf;
+    --banner-bg: #050d17;
+    --banner-ink: #a9c2de;
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
     color-scheme: dark;
   }
@@ -420,7 +424,7 @@ textarea {
   height: 14px;
   border-radius: 50%;
   border: 2px solid var(--border);
-  border-top-color: var(--brand);
+  border-top-color: var(--brand-2);
   animation: spin 0.8s linear infinite;
 }
 
@@ -593,7 +597,7 @@ textarea {
 
 .feedback-button:hover,
 .consent-button:hover {
-  border-color: var(--brand);
+  border-color: var(--brand-2);
 }
 
 .feedback-button:disabled,
@@ -744,7 +748,7 @@ textarea {
 }
 
 .quick-prompt:hover {
-  border-color: var(--brand);
+  border-color: var(--brand-2);
   transform: translateY(-1px);
 }
 
