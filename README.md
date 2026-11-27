@@ -69,6 +69,13 @@ novo no nucleo.
   a origem do prazo (`basis`) aparece em cada caso do console.
 - **Prioridade por tipo de pedido**: `escalation_rules[].priority` define a
   prioridade do ticket; quando varias regras casam, vale a maior.
+- **Orientacao de seguranca fixa**: `escalation_rules[].notice` poe um texto
+  fixo antes de qualquer resposta, com ou sem LLM (risco a pessoas: afastar-se
+  e ligar 193; incidente de dados: o canal nunca pede senha).
+- **Mascaramento de dados pessoais**: CPF com digito verificador, cartao
+  (Luhn), e-mail, telefone e IP saem mascarados antes de persistir e antes de a
+  pergunta ir ao provedor de LLM e de embeddings; datas ISO e protocolos com
+  rotulo ficam legiveis para a trilha de auditoria.
 - **Evals que cobrem a classificacao** (26 casos base, 13 por dominio, com
   casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
   `risco_seguranca`, e nao so que nada inesperado apareca.
@@ -88,11 +95,11 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 1048 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
+| Testes automatizados (`python -m pytest`) | 1134 passam, 47 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
 | Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
 | Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
-| Gravacao da prioridade no ticket contra PostgreSQL real | nao verificada nesta copia (suite de integracao precisa de Docker) |
+| Gravacao da prioridade no ticket contra PostgreSQL real | verificada: `tests/integration/test_demo_seed_console_postgres.py` grava pelo `record_chat` e le pela API do console, no job `postgres` do Phase 0 Gates |
 | Tela web do console (`/team`) | somente leitura: fila, semaforo e filtros; assumir/fechar seguem pela API |
 | Chat com LLM real | exige `OPENAI_API_KEY`; sem chave, responde com o fallback seguro |
 
@@ -196,7 +203,8 @@ queue for the team.
 > **Demo environment.** The contract, maintenance deadlines, asset inventory
 > and privacy notice are fictional and labeled as such in every file. They do
 > not represent any real company. The core comes from `supportFAQagent`, a
-> support agent that has run in a real staging environment.
+> support agent whose staging plans and runbooks stayed in the source
+> repository (see `docs/archive/README.md`).
 
 ### The problem
 
@@ -206,9 +214,10 @@ A street furniture concession runs on deadlines the team does not set:
   has a response time in the service-level annex. Missing it risks penalties
   and weakens the renewal case, and a dark screen is advertising that is not
   delivered.
-- **Legal deadline.** A citizen who asks "are you filming me?" or requests
-  deletion of their data is entitled to an answer within 15 days (LGPD
-  art. 19, II).
+- **Legal deadline.** A citizen who asks "are you filming me?" or asks for
+  access to their data is entitled to a full answer within 15 days (LGPD
+  art. 19, II). For deletion or correction the deadline follows regulation
+  (art. 18, §5); this demo uses the same 15 days as an internal target.
 - **Evidence.** In both cases, the auditor wants to see when the request
   arrived, which deadline applied and who handled it.
 
@@ -218,7 +227,7 @@ A street furniture concession runs on deadlines the team does not set:
 Citizen, technician or auditor (WhatsApp or web)
   -> domain router (maintenance | privacy)
   -> retrieval over the domain knowledge base (SLA annex, privacy notice)
-  -> answer citing the source, or a safe fallback
+  -> answer with the retrieved sources, or a safe fallback
   -> domain rule classifies the request (e.g. exposed wire = risco_seguranca)
   -> ticket with priority (urgent | high | normal | low)
   -> SLA traffic light with the deadline and its basis (clause or article)
@@ -229,7 +238,8 @@ Citizen, technician or auditor (WhatsApp or web)
 | `concessoes-manutencao` | Exposed wire sparking at shelter ABR-1104 | `risco_seguranca` -> urgent | 4h | SLA annex (demo), item 3.1 |
 | `concessoes-manutencao` | Clock REL-0423 has a dark screen | `tela_inoperante` -> high | 24h | SLA annex (demo), item 3.2 |
 | `concessoes-manutencao` | Graffiti on the clock at Praca da Se | `conservacao_limpeza` -> low | 5 days | SLA annex (demo), item 3.4 |
-| `lgpd-titular` | "I want my data deleted" | `pedido_titular` -> normal | 15 days | LGPD art. 19, II |
+| `lgpd-titular` | "What data do you hold about me?" | `pedido_titular` -> normal | 15 days | LGPD art. 19, II |
+| `lgpd-titular` | "I want my data deleted" | `pedido_titular` -> normal | 15 days | internal target (demo); the legal deadline follows regulation (art. 18, §5) |
 | `lgpd-titular` | "I think my data leaked" | `incidente_dados` -> urgent | 4h | internal target (demo) |
 
 The same SLA engine handles a contract deadline (hours) and a legal deadline
@@ -245,32 +255,54 @@ translated.
   SLA, and the deadline's source (`basis`) is shown on every console case.
 - **Priority by request type**: `escalation_rules[].priority` sets the ticket
   priority; when several rules match, the highest wins.
-- **Evals that prove classification**: `required_handoff_reasons` requires
-  "exposed wire" to raise `risco_seguranca`, not just that nothing unexpected
-  shows up.
+- **Fixed safety guidance**: `escalation_rules[].notice` puts a fixed text
+  before any answer, with or without an LLM (risk to people: step away and
+  call 193, the fire department; data incident: the channel never asks for a
+  password).
+- **Personal data masking**: CPF (Brazilian taxpayer ID) with check digits,
+  card numbers (Luhn), e-mail, phone and IP are masked before persistence and
+  before the question reaches the LLM and embeddings providers; ISO dates and
+  labeled protocol numbers stay readable for the audit trail.
+- **Evals that cover classification** (26 base cases, 13 per domain,
+  including negative cases): `required_handoff_reasons` requires "exposed
+  wire" to raise `risco_seguranca`, not just that nothing unexpected shows up.
+- **Team queue screen (`/team`)**: a static, read-only page behind the
+  existing staff OTP login. The queue is ordered by attention (traffic-light
+  color, then nearest deadline), with the deadline in America/Sao_Paulo time,
+  its basis, filters by domain and color, and a refresh every 60 s.
 - **Inherited from the core**: FastAPI API, per-message domain routing,
   lexical or pgvector retrieval, OpenAI or Anthropic provider with safe
   fallback, handoff taxonomy, durable tickets with an SLA console and audited
-  transitions, WhatsApp OTP with LGPD consent, masking of card numbers, CNPJ,
-  e-mail, phone and IP before persistence, and a `request_id` on every
+  transitions, WhatsApp OTP with LGPD consent, and a `request_id` on every
   response.
 
 ### Status and limits
 
-The status table above applies as is. In short: 1048 tests pass (44 skipped
-PostgreSQL integration tests need a database), and the domain evals pass
-(30/30 maintenance, 29/29 data subject, 20/20 reference domain). The evals run
-without an LLM key, so they check retrieval, cited references, classification
-and escalation, not the quality of model-generated text. Priority persistence
-against a real PostgreSQL database is not yet verified in this copy, and the
-team console is an API with no web screen yet.
+The status table above applies as is. In short: 1134 tests pass. The 47
+PostgreSQL integration tests are skipped locally and run against a real
+database in the `postgres` job of Phase 0 Gates, including priority
+persistence from `record_chat` to the console API. The domain evals pass
+(30/30 maintenance, 29/29 data subject, 20/20 reference domain). They run
+without an LLM key, so they check retrieval, returned sources (`references`),
+classification and escalation, not the quality of model-generated text.
 
-The system does not decide on its own. It logs, classifies, cites the source
-and hands the case to a person with the right deadline. It does not execute
-data deletion, discuss penalties, promise a deadline shorter than the
-contract's or disclose personal data in the chat.
+**Real-LLM evals (opt-in, not a gate): not run yet.** `--provider-mode real`
+scores the model's text: it fails on `provider_error`, checks required terms,
+allowed deadlines and the cited item or article, and repeats each case
+`--runs` times. Model, date, temperature, runs, commit and pass rates will be
+recorded in the PT table above and here after the first run.
+
+```bash
+python -m app.evals.run_domain_eval concessoes-manutencao lgpd-titular \
+  --provider-mode real --runs 3 --report reports/eval-real.json
+```
+
+The system does not decide on its own. It logs, classifies, returns the
+retrieved sources and hands the case to a person with the right deadline. It
+does not execute data deletion, discuss penalties, promise a deadline shorter
+than the contract's or disclose personal data in the chat.
 
 Governance: the [system card](docs/system-card.md) lists owner, data
 processed, legal basis, criticality, controls and limits, in the format of an
 AI solution inventory. Coding agents follow `CLAUDE.md` and the skills in
-`.agents/skills/`.
+`.agents/skills/`; commits made with an agent carry a co-author trailer.
