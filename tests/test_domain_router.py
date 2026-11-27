@@ -184,6 +184,27 @@ def test_real_configs_unrelated_text_shows_menu() -> None:
     assert decision.show_menu is True
 
 
+def test_number_inside_sentence_is_not_a_menu_selection() -> None:
+    # Regressao: "2" no endereco nao pode escolher o segundo dominio (lgpd-titular).
+    decision = _real_router().route("O relogio da Rua 2 esta apagado")
+    assert decision.reason != "menu_selection"
+    assert decision.domain == "concessoes-manutencao"
+    assert decision.reason == "keyword_match"
+
+
+@pytest.mark.parametrize("text", ["2", "opcao 2", "opção 2", " 2. ", "Opção 2!", "option 2"])
+def test_whole_message_number_is_a_menu_selection(text: str) -> None:
+    decision = _real_router().route(text)
+    assert decision.domain == "lgpd-titular", text
+    assert decision.reason == "menu_selection"
+
+
+@pytest.mark.parametrize("text", ["9", "opcao 9", "2 3", "opcao 2 por favor"])
+def test_out_of_range_or_extra_text_number_is_not_a_menu_selection(text: str) -> None:
+    decision = _real_router().route(text)
+    assert decision.reason != "menu_selection", text
+
+
 # --- mecanismo de unique-keyword routing (com fixtures controladas) -----------
 
 
