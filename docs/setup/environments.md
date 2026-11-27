@@ -76,6 +76,9 @@ Eliminar ambiguidade entre laboratorio local, ambientes externos nao oficiais e 
   - preserva `X-Request-ID`, `request_id`, `handoff_reasons`, `references` e `error_code`
   - deve ficar atras de rate limit publico
   - `ENABLE_PUBLIC_CHAT_UI=true` e a flag explicita para expor a `chat-ui` fora do modo de desenvolvimento
+- Tela da fila do time (`/team`, somente leitura):
+  - `ENABLE_TEAM_UI` vazio liga a tela so em desenvolvimento; `true`/`false` explicito vale em qualquer ambiente
+  - os dados continuam atras de `ENABLE_SUPPORT_CONSOLE` e da sessao staff; sem eles a tela mostra "Console indisponivel"
 - Baseline recomendado de hardening:
   - `WEB_CHAT_RATE_LIMIT_PER_MINUTE=10`
   - nome de cookie por ambiente, por exemplo `sfaq_web_session_staging`

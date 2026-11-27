@@ -48,6 +48,26 @@ from app.core.errors import DatabaseUnavailableError
 
 logger = logging.getLogger(__name__)
 CHAT_STATIC_DIR = Path(__file__).resolve().parent / "static" / "chat"
+TEAM_STATIC_DIR = Path(__file__).resolve().parent / "static" / "team"
+TEAM_UI_PATH_PREFIXES = ("/team-assets/",)
+TEAM_UI_PATHS = {"/team", "/team/"}
+# A tela do time so carrega arquivos da propria origem e so conversa com a
+# propria API: nada de CDN, script inline, frame ou formulario para fora.
+TEAM_UI_SECURITY_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'none'; script-src 'self'; style-src 'self'; "
+        "img-src 'self'; connect-src 'self'; font-src 'self'; "
+        "base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store",
+}
+
+
+def _is_team_ui_path(path: str) -> bool:
+    return path in TEAM_UI_PATHS or path.startswith(TEAM_UI_PATH_PREFIXES)
 
 
 def create_app() -> FastAPI:
@@ -105,6 +125,8 @@ def create_app() -> FastAPI:
         settings,
         application.state.database_runtime,
     )
+
+    team_ui_enabled = bool(settings.enable_team_ui) and TEAM_STATIC_DIR.exists()
 
     @application.middleware("http")
     async def request_id_middleware(request: Request, call_next):
@@ -176,6 +198,9 @@ def create_app() -> FastAPI:
 
         response = await call_next(request)
         response.headers[REQUEST_ID_HEADER] = request_id
+        if team_ui_enabled and _is_team_ui_path(request.url.path):
+            for header, value in TEAM_UI_SECURITY_HEADERS.items():
+                response.headers[header] = value
         log_event(
             logger,
             "http_request",
@@ -271,6 +296,21 @@ def create_app() -> FastAPI:
         @application.get("/chat-ui/", include_in_schema=False)
         def chat_ui() -> FileResponse:
             return FileResponse(CHAT_STATIC_DIR / "index.html")
+
+    # Tela somente leitura do console (/team): HTML+JS estaticos que falam so
+    # com /web/support/*. Sem a API do console ligada, a tela mostra
+    # "console indisponivel"; os dados e a autorizacao continuam na API.
+    if team_ui_enabled:
+        application.mount(
+            "/team-assets",
+            StaticFiles(directory=TEAM_STATIC_DIR),
+            name="team-assets",
+        )
+
+        @application.get("/team", include_in_schema=False)
+        @application.get("/team/", include_in_schema=False)
+        def team_ui() -> FileResponse:
+            return FileResponse(TEAM_STATIC_DIR / "index.html")
 
     application.include_router(health.router)
     application.include_router(domains.router, prefix="/domains", tags=["domains"])

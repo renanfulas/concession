@@ -61,9 +61,14 @@ novo no nucleo.
   a origem do prazo (`basis`) aparece em cada caso do console.
 - **Prioridade por tipo de pedido**: `escalation_rules[].priority` define a
   prioridade do ticket; quando varias regras casam, vale a maior.
-- **Evals que cobrem a classificacao** (20 casos base, 10 por dominio):
-  `required_handoff_reasons` exige que "fio exposto" levante
+- **Evals que cobrem a classificacao** (26 casos base, 13 por dominio, com
+  casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
   `risco_seguranca`, e nao so que nada inesperado apareca.
+- **Tela da fila do time (`/team`)**: pagina estatica, somente leitura, com o
+  login OTP staff existente, fila em ordem de atencao, semaforo com rotulo em
+  texto, prazo no fuso America/Sao_Paulo, base do prazo, filtros por dominio e
+  cor e atualizacao a cada 60 s. Ligada por padrao em desenvolvimento
+  (`ENABLE_TEAM_UI`); sem a API do console, mostra "Console indisponivel".
 - **Do nucleo herdado**: API FastAPI, roteamento de dominio por mensagem,
   retrieval lexical ou pgvector, provider OpenAI ou Anthropic com fallback
   seguro, handoff com taxonomia, ticket duravel com console de SLA e
@@ -80,7 +85,7 @@ novo no nucleo.
 | Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
 | Gravacao da prioridade no ticket contra PostgreSQL real | nao verificada nesta copia (suite de integracao precisa de Docker) |
-| Tela web do console (`/team`) | nao existe; o console e uma API |
+| Tela web do console (`/team`) | somente leitura: fila, semaforo e filtros; assumir/fechar seguem pela API |
 | Chat com LLM real | exige `OPENAI_API_KEY`; sem chave, responde com o fallback seguro |
 
 Os evals rodam sem chave de LLM. Nesse modo, eles validam retrieval,
