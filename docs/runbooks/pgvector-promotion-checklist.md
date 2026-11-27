@@ -86,6 +86,30 @@ Depois do rollback:
 - registrar relatorio sanitizado
 - nao apagar dados pgvector sem decisao explicita
 
+## Reingestao apos a fonte relativa
+
+`articles.source` agora recebe o identificador estavel
+`domains/<dominio>/knowledge/...` (antes era `str(file_path)`, que podia ser um
+caminho absoluto do servidor). O `id` de `articles` continua gerado pelo banco
+e o `id` de `article_chunks` nao mudou de derivacao; o que muda e a chave de
+upsert `(domain_id, source)`. Por isso, reingerir um dominio ja carregado cria
+artigos novos em vez de atualizar os antigos, e as linhas antigas com caminho
+absoluto continuam `active` (trechos duplicados no retrieval; na resposta, a
+saida ja reescreve e deduplica essas referencias).
+
+Depois de reingerir com `scripts/ingest_domain_pgvector.py`, desative as
+linhas legadas do dominio, sem apagar:
+
+```sql
+UPDATE articles
+SET status = 'inactive', updated_at = now()
+WHERE domain_id = (SELECT id FROM domains WHERE name = '<dominio>')
+  AND status = 'active'
+  AND (source LIKE '/%' OR source ~ '^[A-Za-z]:[\\/]' OR source LIKE '%\\%');
+```
+
+O retrieval so le `status = 'active'`. Rode a `pgvector_gate.yaml` depois.
+
 ## Evidencias minimas
 
 Para cada rodada de decisao ou revalidacao, registrar:

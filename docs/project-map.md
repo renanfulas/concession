@@ -29,6 +29,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Prioridade do caso por regra | ✅ codigo · 🟡 banco | `escalation_rules[].priority`, `resolve_case_priority`, coluna `priority` no INSERT | rodar a suite de integracao PostgreSQL (`docker-compose.test.yml`) para provar o INSERT | `tests/test_concessoes_domain.py`; integracao nao rodada nesta copia |
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
+| `references` sem caminho do servidor | ✅ codigo · 🟡 banco | fonte estavel `domains/<dominio>/knowledge/...` na ingestao; resposta deduplicada e com caminhos legados reescritos (`app/orchestration/references.py`) | reingerir pgvector e desativar artigos legados (`docs/runbooks/pgvector-promotion-checklist.md`) | `tests/test_reference_paths.py` |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
 | Resumo em ingles no README | ✅ | secao `English summary` no fim do `README.md`, com link no topo | atualizar junto quando o status em PT mudar | `tests/test_docs_links.py`, revisao humana |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
