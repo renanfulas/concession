@@ -271,18 +271,3 @@ def test_domains_requires_api_key() -> None:
     assert response.status_code == 403
     assert response.headers[REQUEST_ID_HEADER] == "auth-domains-1"
     assert response.json()["detail"] == "Invalid API key"
-
-
-def test_zoom_join_requires_api_key() -> None:
-    response = client.post(
-        "/zoom/join",
-        headers={REQUEST_ID_HEADER: "auth-zoom-join-1"},
-        json={
-            "meeting_url": "https://zoom.us/j/123456789",
-            "webhook_url": "https://example.test/zoom/webhook",
-        },
-    )
-
-    assert response.status_code == 403
-    assert response.headers[REQUEST_ID_HEADER] == "auth-zoom-join-1"
-    assert response.json()["detail"] == "Invalid API key"

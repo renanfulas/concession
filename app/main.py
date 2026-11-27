@@ -23,7 +23,6 @@ from app.api.routes import (
     web_chat,
     web_handoff,
     web_support,
-    zoom,
 )
 from app.core.config import DEV_ENVS, get_settings
 from app.core.logging import configure_logging, log_event
@@ -330,7 +329,6 @@ def create_app() -> FastAPI:
         application.include_router(
             web_support.router, prefix="/web/support", tags=["web-support"]
         )
-    application.include_router(zoom.router, prefix="/zoom", tags=["zoom"])
     application.include_router(
         meta_whatsapp.router,
         prefix="/integrations/meta/whatsapp",

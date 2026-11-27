@@ -224,7 +224,7 @@ def _is_cnpj(digits: str) -> bool:
 def contains_card_number(text: str | None) -> bool:
     """Return True when ``text`` contains a substring that looks like a card PAN.
 
-    Reusable detector for checkout/handoff so card-number policy lives in one
+    Reusable detector for the handoff so card-number policy lives in one
     place. Never logs or echoes the matched value.
     """
     if not text:

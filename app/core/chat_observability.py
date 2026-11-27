@@ -2,7 +2,7 @@
 
 Every channel that calls ``ChatFlowService.answer`` must emit the same
 per-turn observability event so funnel metrics ("por dominio") stay available
-regardless of transport (web, API, Meta WhatsApp, Hermes WhatsApp, zoom).
+regardless of transport (web, API, Meta WhatsApp, Hermes WhatsApp).
 
 The web and API routes assemble these fields inline; this helper exists so the
 transports outside ``app/api/routes`` do not drift from the documented field set
