@@ -11,6 +11,9 @@ const API = {
   start: "/web/support/auth/start",
   confirm: "/web/support/auth/confirm",
   logout: "/web/support/auth/logout",
+  // Login de desenvolvimento: o servidor responde 404 fora de desenvolvimento
+  // local, entao o botao so aparece quando o GET devolve 204.
+  devLogin: "/web/support/auth/dev-login",
   domains: "/web/support/domains",
   cases: "/web/support/cases",
 };
@@ -186,7 +189,32 @@ function showLogin(hintName) {
     el("hint-box").hidden = true;
     el("phone-form").hidden = false;
   }
+  el("dev-login-box").hidden = true;
   showView("login");
+  probeDevLogin();
+}
+
+async function probeDevLogin() {
+  try {
+    await api(API.devLogin);
+    el("dev-login-box").hidden = false;
+  } catch (error) {
+    el("dev-login-box").hidden = true;
+  }
+}
+
+async function devLogin() {
+  hideLoginMessage();
+  try {
+    const login = await api(API.devLogin, { method: "POST" });
+    await enterQueue(login.display_name);
+  } catch (error) {
+    if (error.status === 409) {
+      setLoginMessage("Nenhum operador de demonstração. Rode python -m scripts.seed_demo_cases.");
+    } else {
+      setLoginMessage("Login de demonstração indisponível nesta instância.");
+    }
+  }
 }
 
 function setLoginMessage(text) {
@@ -280,6 +308,7 @@ el("phone-form").addEventListener("submit", (event) => {
 });
 
 el("hint-button").addEventListener("click", () => startOtp(null));
+el("dev-login-button").addEventListener("click", devLogin);
 
 el("other-number-button").addEventListener("click", () => {
   el("hint-box").hidden = true;

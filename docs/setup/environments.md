@@ -79,6 +79,7 @@ Eliminar ambiguidade entre laboratorio local, ambientes externos nao oficiais e 
 - Tela da fila do time (`/team`, somente leitura):
   - `ENABLE_TEAM_UI` vazio liga a tela so em desenvolvimento; `true`/`false` explicito vale em qualquer ambiente
   - os dados continuam atras de `ENABLE_SUPPORT_CONSOLE` e da sessao staff; sem eles a tela mostra "Console indisponivel"
+  - `ENABLE_TEAM_DEV_LOGIN=true` (padrao `false`) mostra "Entrar como atendente de demonstracao" na tela de login: sessao do operador ficticio do seed, sem OTP. A aplicacao nao sobe com a flag sem `APP_ENV=development` explicito (herdar o padrao nao vale); cada pedido exige peer TCP e `Host` de loopback e nenhum header de proxy (`Forwarded`, `X-Forwarded-*`, `X-Real-IP`, `Via`), senao `404`
 - Baseline recomendado de hardening:
   - `WEB_CHAT_RATE_LIMIT_PER_MINUTE=10`
   - nome de cookie por ambiente, por exemplo `sfaq_web_session_staging`

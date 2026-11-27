@@ -91,6 +91,9 @@ novo no nucleo.
   texto, prazo no fuso America/Sao_Paulo, base do prazo, filtros por dominio e
   cor e atualizacao a cada 60 s. Ligada por padrao em desenvolvimento
   (`ENABLE_TEAM_UI`); sem a API do console, mostra "Console indisponivel".
+  Para a demo local, `ENABLE_TEAM_DEV_LOGIN=true` entra como o operador
+  ficticio do seed sem OTP; so funciona com `APP_ENV=development` explicito,
+  pedido vindo de loopback e nenhum header de proxy.
 - **Do nucleo herdado**: API FastAPI, roteamento de dominio por mensagem,
   retrieval lexical ou pgvector, provider OpenAI ou Anthropic com fallback
   seguro, handoff com taxonomia, ticket duravel com console de SLA e
@@ -304,7 +307,10 @@ translated.
 - **Team queue screen (`/team`)**: a static, read-only page behind the
   existing staff OTP login. The queue is ordered by attention (traffic-light
   color, then nearest deadline), with the deadline in America/Sao_Paulo time,
-  its basis, filters by domain and color, and a refresh every 60 s.
+  its basis, filters by domain and color, and a refresh every 60 s. For the
+  local demo, `ENABLE_TEAM_DEV_LOGIN=true` signs in as the seed's fictitious
+  operator without OTP; it only works with an explicit
+  `APP_ENV=development`, a loopback request and no proxy header.
 - **Inherited from the core**: FastAPI API, per-message domain routing,
   lexical or pgvector retrieval, OpenAI or Anthropic provider with safe
   fallback, handoff taxonomy, durable tickets with an SLA console and audited

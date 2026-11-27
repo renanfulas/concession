@@ -90,6 +90,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Classificacao testada | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | evals base cobrem 26 casos (13 por dominio), incluindo casos negativos (termo presente com outro sentido), todos passando |
 | Prazo deterministico | `domain.yaml` bloco `sla`, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Orientacao de seguranca fixa | `escalation_rules[].notice` no `domain.yaml`, aplicada em `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals exigem "ligue 193", "nunca pede senha", "4 horas" (incidente) e "24 horas" (fiscalizacao) mesmo sem LLM |
+| Login de desenvolvimento restrito a maquina local | `ENABLE_TEAM_DEV_LOGIN` (padrao `false`), `app/support/dev_login.py`: nao sobe sem `APP_ENV=development` explicito; exige peer e `Host` de loopback; recusa headers de proxy | `tests/test_team_dev_login.py` |
 | Relatorio mensal sem dado pessoal | `app/support/monthly_report.py`, `GET /web/support/reports/monthly.csv` (sessao staff) | `tests/test_monthly_report.py` (sem coluna de telefone, nome, e-mail, resumo ou `request_id`; injecao de formula neutralizada) |
 | Motivo de atraso em lista fechada | `late_reason` obrigatorio ao fechar depois do prazo; `CHECK` no banco, sem texto livre | `tests/test_monthly_report.py`, `tests/integration/test_monthly_report_postgres.py` |
 | Mascaramento antes de persistir | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |

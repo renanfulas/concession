@@ -66,6 +66,7 @@ from app.support.whatsapp_bridge import (
     UnknownStaffTemplate,
 )
 from app.domain_engine.loader import DomainLoader
+from app.support.dev_login import DEMO_STAFF_PHONE, dev_login_allowed
 from app.support.monthly_report import (
     InvalidMonth,
     build_report_rows,
@@ -275,6 +276,72 @@ def confirm_staff_otp(
     log_event(
         logger,
         "support_console_auth_confirmed",
+        request_id=get_request_id(request),
+        staff_id=login.principal.staff_id,
+    )
+    return StaffLoginResponse(
+        display_name=login.principal.display_name,
+        expires_at=login.principal.expires_at,
+    )
+
+
+def _require_dev_login(request: Request) -> None:
+    """404 unless every dev-login guard holds (see app/support/dev_login.py)."""
+
+    allowed = dev_login_allowed(
+        request.app.state.settings,
+        client_host=request.client.host if request.client else None,
+        host_header=request.headers.get("host"),
+        headers=request.headers,
+    )
+    if not allowed:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+
+@router.get("/auth/dev-login", status_code=204)
+def dev_login_available(request: Request) -> Response:
+    """204 when the local demo login is available; 404 otherwise."""
+
+    _require_dev_login(request)
+    return Response(status_code=204)
+
+
+@router.post("/auth/dev-login", response_model=StaffLoginResponse)
+def dev_login(request: Request, response: Response) -> StaffLoginResponse:
+    """Session for the fictitious seed operator, without OTP (local demo only)."""
+
+    _require_dev_login(request)
+    _require_csrf_header(request)
+    service = _get_service(request)
+    settings = request.app.state.settings
+    try:
+        login = service.issue_dev_session(DEMO_STAFF_PHONE)
+    except DatabaseUnavailableError as exc:
+        raise HTTPException(
+            status_code=503, detail="support_inbox_storage_unavailable"
+        ) from exc
+    if login is None:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "dev_staff_missing", "hint": "python -m scripts.seed_demo_cases"},
+        )
+
+    max_age = max(
+        1,
+        int((login.principal.expires_at - datetime.now(UTC)).total_seconds()),
+    )
+    response.set_cookie(
+        key=STAFF_SESSION_COOKIE,
+        value=login.session_token,
+        max_age=max_age,
+        path=STAFF_SESSION_COOKIE_PATH,
+        httponly=True,
+        samesite="lax",
+        secure=bool(settings.web_chat_cookie_secure),
+    )
+    log_event(
+        logger,
+        "support_console_dev_login",
         request_id=get_request_id(request),
         staff_id=login.principal.staff_id,
     )

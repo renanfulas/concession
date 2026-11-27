@@ -986,9 +986,23 @@ Consumidor: a tela interna `/team` same-origin (somente leitura, `app/static/tea
 flag `ENABLE_TEAM_UI`) — nenhum
 segredo, nenhum `X-API-Key`, nenhum telefone bruto no JS do cliente.
 
+Login de desenvolvimento (`ENABLE_TEAM_DEV_LOGIN`, padrao `false`;
+`app/support/dev_login.py`): `POST /web/support/auth/dev-login` com
+`X-Requested-With: XMLHttpRequest` emite a mesma sessao staff do OTP
+(mesmo cookie, mesma expiracao, sem cookie de lembrete) para o operador
+ficticio do seed (`Atendente Demo 1`); sem ele, `409 dev_staff_missing`. Tres
+travas: a aplicacao nao sobe com a flag sem `APP_ENV=development` explicito;
+cada pedido exige peer TCP de loopback e `Host` de loopback; qualquer header
+de proxy (`Forwarded`, `X-Forwarded-*`, `X-Real-IP`, `Via`) recusa. Toda
+falha responde `404`, igual a rota inexistente. O uvicorn confia em
+`X-Forwarded-For` vindo de 127.0.0.1 por padrao, por isso a presenca do
+header, e nao so o peer, decide.
+
 ```text
 POST /web/support/auth/start
 POST /web/support/auth/confirm
+GET  /web/support/auth/dev-login    (204 se disponivel; 404 caso contrario)
+POST /web/support/auth/dev-login    (so desenvolvimento local; ver abaixo)
 GET  /web/support/auth/session
 POST /web/support/auth/logout
 GET  /web/support/domains
