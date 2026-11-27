@@ -86,7 +86,10 @@ def runtime():
 
 
 def _open_case(runtime: DatabaseRuntime, *, priority: str, reasons: list[str]) -> str:
-    request_id = f"it-020-{uuid4().hex[:10]}"
+    # A whole UUID, never a hex slice: about 1 slice in 110 comes out all
+    # digits, and safe_feedback_identifier rejects 10 digits in a row as a
+    # phone number, so record_chat fell back to persistence_unavailable.
+    request_id = str(uuid4())
     result = OperationalRepository(runtime).record_chat(
         ChatAuditInput(
             request_id=request_id,
