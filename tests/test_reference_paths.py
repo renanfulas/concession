@@ -129,3 +129,20 @@ def test_public_references_dedup_preserves_order() -> None:
 )
 def test_public_reference_strips_filesystem_layout(source: str, expected: str) -> None:
     assert public_reference(source, "d") == expected
+
+
+def test_lexical_retrieval_ignores_accents_in_the_question() -> None:
+    """A citizen typing proper pt-BR must retrieve the same as unaccented text."""
+    from pathlib import Path
+
+    from app.domain_engine.loader import DomainLoader
+    from app.retrieval.lexical_store import LexicalVectorStore
+
+    domain = DomainLoader(Path("domains")).load("concessoes-manutencao")
+    assert domain is not None
+    store = LexicalVectorStore()
+    accented = store.search(domain, "O relógio da Praça está com a tela apagada", top_k=5)
+    plain = store.search(domain, "O relogio da Praca esta com a tela apagada", top_k=5)
+    assert [(c.source, round(c.score, 4)) for c in accented] == [
+        (c.source, round(c.score, 4)) for c in plain
+    ]
