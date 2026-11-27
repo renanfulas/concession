@@ -29,6 +29,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Prioridade do caso por regra | ✅ codigo · 🟡 banco | `escalation_rules[].priority`, `resolve_case_priority`, coluna `priority` no INSERT | rodar a suite de integracao PostgreSQL (`docker-compose.test.yml`) para provar o INSERT | `tests/test_concessoes_domain.py`; integracao nao rodada nesta copia |
 | Evals com `required_handoff_reasons` | ✅ | o eval exige o motivo certo, nao so a ausencia de motivo errado | — | evals dos dois dominios |
 | Roteamento manutencao x privacidade | ✅ | saudacao e esclarecimento novos, empate cai no menu | — | `tests/test_domain_router.py` |
+| Orientacao de seguranca deterministica (`notice`) | ✅ | texto fixo por regra (risco a pessoas: afastar e ligar 193; incidente de dados: trocar senhas, canal nunca pede senha), antes de qualquer resposta, inclusive fallback e resposta bloqueada | revisar o texto com seguranca do trabalho e o encarregado reais | `tests/test_rule_notices.py`, evals base dos dois dominios |
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md` | — | revisao humana |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |

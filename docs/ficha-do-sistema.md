@@ -73,6 +73,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Confinamento de escopo, prompt e segredo | `docs/security/llm-confinement.md`, `domains/*/evals/confinement/` | evals de confinamento 33/33 |
 | Classificacao testada | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | evals base 20/20 nos dois dominios |
 | Prazo deterministico | `domain.yaml` bloco `sla`, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
+| Orientacao de seguranca fixa | `escalation_rules[].notice` no `domain.yaml`, aplicada em `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals exigem "ligue 193" e "nunca pede senha" mesmo sem LLM |
 | Mascaramento antes de persistir | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_privacy.py` |
 | Logs sem PII, token ou `session_id` bruto | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
 | Consentimento antes de contato direto | gate de consentimento no ticket | testes de handoff web |

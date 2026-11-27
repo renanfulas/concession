@@ -73,6 +73,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Scope, prompt and secret confinement | `docs/security/llm-confinement.md`, `domains/*/evals/confinement/` | confinement evals 33/33 |
 | Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals 20/20 across both domains |
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
+| Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193" and "nunca pede senha" even without an LLM |
 | Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_privacy.py` |
 | Logs without PII, tokens or raw `session_id` | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
 | Consent before direct contact | consent gate on tickets | web handoff tests |

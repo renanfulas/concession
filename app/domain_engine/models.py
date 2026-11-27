@@ -56,6 +56,10 @@ class DomainHandoffRuleConfig(DomainModel):
     # Priority of the support case this rule opens (drives the console SLA).
     # None keeps the default ``normal``; when several rules match, the highest wins.
     priority: CasePriority | None = None
+    # Fixed guidance shown before the answer whenever this rule fires, whatever
+    # produced the answer (LLM, fallback, blocked response). Safety instructions
+    # ("keep away, call 193") must not depend on the model being available.
+    notice: str | None = None
 
 
 class DomainHandoffConfig(DomainModel):

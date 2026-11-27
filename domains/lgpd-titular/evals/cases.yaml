@@ -104,6 +104,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao fixa (notice), presente mesmo sem LLM
+        - nunca pede senha
       expected_references:
         - incidente-vazamento.md
       required_handoff_reasons:

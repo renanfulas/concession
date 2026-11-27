@@ -116,6 +116,11 @@ feature_flags:
   regra abre no console. Quando varias regras casam, vale a maior; sem
   prioridade declarada o caso fica `normal`. Codigo:
   `app.handoff.taxonomy.resolve_case_priority`.
+- `escalation_rules[].notice` (opcional) e um texto fixo mostrado antes da
+  resposta sempre que a regra casa, venha a resposta do LLM, do fallback ou de
+  uma resposta bloqueada. Serve para orientacao que nao pode depender do modelo
+  (ex.: risco a pessoas: afastar-se e ligar 193). Avisos iguais aparecem uma vez.
+  Codigo: `ChatFlowService._with_rule_notices`.
 - `sla` (opcional) sobrescreve, para os casos deste dominio, os minutos do SLA
   global (`SUPPORT_SLA_MINUTES_*`) nas prioridades declaradas; as demais herdam
   o global. `basis` diz de onde vem o prazo (clausula de contrato, artigo de lei)
