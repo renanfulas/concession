@@ -121,6 +121,11 @@ class Settings(BaseSettings):
     # sem valor, liga em APP_ENV de desenvolvimento e fica desligada fora
     # dele; true/false explicito vale em qualquer ambiente.
     enable_team_ui: bool | None = Field(default=None, alias="ENABLE_TEAM_UI")
+    # Login de desenvolvimento da /team (Fase 1, item 4): emite a sessao do
+    # operador ficticio do seed sem OTP, para a demo local. So sobe com
+    # APP_ENV=development explicito; as rotas tambem exigem peer e Host de
+    # loopback e recusam headers de proxy (app/support/dev_login.py).
+    enable_team_dev_login: bool = Field(default=False, alias="ENABLE_TEAM_DEV_LOGIN")
     web_chat_rate_limit_per_minute: int = Field(
         default=10,
         alias="WEB_CHAT_RATE_LIMIT_PER_MINUTE",
@@ -449,6 +454,13 @@ class Settings(BaseSettings):
             self.web_chat_cookie_secure = app_env not in DEV_ENVS
         if self.enable_team_ui is None:
             self.enable_team_ui = app_env in DEV_ENVS
+        if self.enable_team_dev_login and (
+            "app_env" not in self.model_fields_set or app_env != "development"
+        ):
+            # Fail closed at boot: a default or inherited APP_ENV never counts.
+            raise ValueError(
+                "ENABLE_TEAM_DEV_LOGIN requires an explicit APP_ENV=development",
+            )
 
         if self.enable_public_chat_ui and app_env not in DEV_ENVS:
             if not self.web_chat_cookie_secure:

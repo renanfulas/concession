@@ -269,6 +269,43 @@ class StaffConsoleAuthService:
             hint_cookie_value=hint_cookie_value,
         )
 
+    def issue_dev_session(self, phone: str) -> StaffLoginResult | None:
+        """Session for an active staff member, without OTP (local demo only).
+
+        The route checks ``app.support.dev_login.dev_login_allowed`` before
+        calling this. Same session shape and expiry as ``confirm``; no device
+        hint is issued. Returns ``None`` when the staff member does not exist
+        (run ``scripts.seed_demo_cases`` first).
+        """
+
+        now = self._now()
+        staff = self.staff_store.get_active_staff_by_phone_hash(
+            self._digest_identity(normalize_phone(phone))
+        )
+        if staff is None:
+            return None
+        session_token = secrets.token_urlsafe(32)
+        expires_at = next_session_cutoff(
+            now,
+            self.settings.support_console_timezone,
+            self.settings.support_staff_session_expiry_hour,
+        )
+        self.staff_store.create_session(
+            self._digest_identity(session_token),
+            staff.id,
+            now,
+            expires_at,
+        )
+        return StaffLoginResult(
+            principal=StaffPrincipal(
+                staff_id=staff.id,
+                display_name=staff.display_name,
+                expires_at=expires_at,
+            ),
+            session_token=session_token,
+            hint_cookie_value=None,
+        )
+
     def get_session(self, session_token: str | None) -> StaffPrincipal | None:
         if not session_token:
             return None

@@ -125,6 +125,12 @@ Como abrir:
    (`ENABLE_SUPPORT_CONSOLE=true`, com os pre-requisitos acima). Sem ela, ou
    sem banco, a tela mostra "Console indisponivel" e o botao "Tentar de novo".
 3. `uvicorn app.main:app --reload` e abrir `http://127.0.0.1:8000/team`.
+4. Atalho de demo local (opcional): com `APP_ENV=development` explicito,
+   `ENABLE_TEAM_DEV_LOGIN=true` e o seed aplicado
+   (`python -m scripts.seed_demo_cases`), a tela de login mostra "Entrar como
+   atendente de demonstracao". Conferir que
+   `curl -H "X-Forwarded-For: 203.0.113.7" http://127.0.0.1:8000/web/support/auth/dev-login`
+   e `curl -H "Host: concession.example.test" ...` devolvem `404`.
 
 O que conferir (passos 2-7 pela interface):
 
