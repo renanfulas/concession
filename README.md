@@ -107,7 +107,7 @@ Os evals rodam sem chave de LLM. Nesse modo, eles validam retrieval,
 fontes recuperadas (`references`), classificacao e escalonamento, mas nao a
 qualidade do texto gerado pelo modelo nem o que ele de fato cita.
 
-### Evals com LLM real (opt-in, nao e gate): nao executado ainda
+### Evals com LLM real (opt-in, nao e gate): linha de base de 2026-11-27
 
 O modo `--provider-mode real` mede o texto do modelo: falha com
 `provider_error`, cobra termos, prazos permitidos e citacao do item ou artigo,
@@ -119,21 +119,33 @@ python -m app.evals.run_domain_eval concessoes-manutencao lgpd-titular \
   --provider-mode real --runs 3 --report reports/eval-real.json
 ```
 
-Preencha com os numeros do relatorio depois de rodar. Ate la, nenhum
-resultado com LLM real foi medido.
+Linha de base medida antes de qualquer ajuste de prompt: 21 de 26 casos
+passam nas 3 rodadas. Nenhuma chamada falhou (69/69), e fontes recuperadas e
+motivos de encaminhamento passaram em todos os casos. As 5 falhas:
+
+- **Defeito sem regra nao vira caso** (`negativo-sem-risco-nao-e-urgente`,
+  `negativo-tecnico-atrasado`, 0/3): com o LLM respondendo com confianca, um
+  defeito que nao casa nenhuma regra ("banco solto, sem risco") nao e
+  encaminhado e nao entra na fila. Sem LLM, o fallback encaminha por baixa
+  confianca, e isso ficava escondido.
+- **Prazo errado ou ausente** (`suspeita-vazamento`, `notificacao-fiscalizacao`,
+  0/3): o modelo diz 15 dias para suspeita de vazamento (a base diz triagem em
+  4 horas) e nao informa as 24 horas da notificacao da fiscalizacao.
+- **Citacao instavel** (`relogio-hora-errada`, 2/3): uma rodada nao cita o
+  item 3.3.
 
 | Campo | Valor |
 | --- | --- |
-| Modelo (`model`) | nao executado ainda |
-| Data (`timestamp_utc`) | nao executado ainda |
-| Temperatura (`temperature`) | nao executado ainda |
-| Rodadas (`runs`) | nao executado ainda |
-| Commit (`git_commit`) | nao executado ainda |
-| `concessoes-manutencao` pass@all / taxa media | nao executado ainda |
-| `lgpd-titular` pass@all / taxa media | nao executado ainda |
-| Prazos alucinados (`allowed_durations` passed/total) | nao executado ainda |
-| Tokens (`usage.total_tokens`) | nao executado ainda |
-| Custo (calculado a parte; o relatorio nao estima) | nao executado ainda |
+| Modelo (`model`) | `gpt-4o-mini-2024-07-18` (OpenAI) |
+| Data (`timestamp_utc`) | 2026-11-27 05:01 UTC |
+| Temperatura (`temperature`) | 0.0 |
+| Rodadas (`runs`) | 3 |
+| Commit (`git_commit`) | `3326b79` (arvore limpa) |
+| `concessoes-manutencao` pass@all / taxa media | 9/13 (69%) / 74% |
+| `lgpd-titular` pass@all / taxa media | 12/13 (92%) / 92% |
+| Prazos alucinados (`allowed_durations` passed/total) | 21/24 checagens; as 3 falhas sao "15 dias" em `suspeita-vazamento` |
+| Tokens (`usage.total_tokens`) | 141.151 (133.098 de entrada, 8.053 de saida) em 69 chamadas |
+| Custo (calculado a parte; o relatorio nao estima) | nao estimado; calcular pelo `usage` com a tabela de precos vigente do provedor |
 
 ## Rodando localmente
 
@@ -286,11 +298,26 @@ persistence from `record_chat` to the console API. The domain evals pass
 without an LLM key, so they check retrieval, returned sources (`references`),
 classification and escalation, not the quality of model-generated text.
 
-**Real-LLM evals (opt-in, not a gate): not run yet.** `--provider-mode real`
-scores the model's text: it fails on `provider_error`, checks required terms,
-allowed deadlines and the cited item or article, and repeats each case
-`--runs` times. Model, date, temperature, runs, commit and pass rates will be
-recorded in the PT table above and here after the first run.
+**Real-LLM evals (opt-in, not a gate): baseline of 2026-11-27.**
+`--provider-mode real` scores the model's text: it fails on `provider_error`,
+checks required terms, allowed deadlines and the cited item or article, and
+repeats each case `--runs` times. Baseline before any prompt tuning, with
+`gpt-4o-mini-2024-07-18` (OpenAI), temperature 0.0, 3 runs, commit `3326b79`:
+21 of 26 cases pass all 3 runs (maintenance 9/13, mean 74%; data subject
+12/13, mean 92%), 69/69 calls succeeded, and retrieved sources and handoff
+reasons passed in every case. 141,151 tokens in total. The 5 failures:
+
+- **A defect with no matching rule does not become a case**
+  (`negativo-sem-risco-nao-e-urgente`, `negativo-tecnico-atrasado`, 0/3): when
+  the LLM answers confidently, a defect that matches no rule ("loose bench,
+  no risk") is not handed off and never reaches the queue. Without an LLM the
+  fallback hands it off for low confidence, which hid the gap.
+- **Wrong or missing deadline** (`suspeita-vazamento`,
+  `notificacao-fiscalizacao`, 0/3): the model says 15 days for a suspected
+  data leak (the knowledge base says triage within 4 hours) and does not state
+  the 24 hours for an auditor's notice.
+- **Unstable citation** (`relogio-hora-errada`, 2/3): one run does not cite
+  item 3.3.
 
 ```bash
 python -m app.evals.run_domain_eval concessoes-manutencao lgpd-titular \
