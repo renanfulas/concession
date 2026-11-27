@@ -130,18 +130,58 @@ def attention_sort_key(
     priority: str,
     opened_at: datetime,
     sla: SlaAssessment,
+    case_id: str = "",
 ) -> tuple:
     """Deterministic queue order: mesma entrada, mesma fila.
 
-    Overdue-and-not-paused first, then priority weight, then oldest first.
+    Uma fila, cada caso com o seu prazo: a pressao do prazo manda, nao o
+    dominio nem so a prioridade.
+
+    1. Estado do semaforo: vermelho, amarelo, verde ativos; pausados por
+       ultimo (aguardam o cliente, o time nao tem acao).
+    2. ``deadline_at`` crescente (prazo mais proximo primeiro; entre os
+       estourados, o que estourou ha mais tempo). Todos os casos sao avaliados
+       no mesmo ``db_now``, entao isso equivale a "tempo restante crescente"
+       em unidade absoluta, comparavel entre prazos de horas e de dias.
+    3. Peso de prioridade, depois mais antigo, depois ``case_id`` (desempate
+       final, sem depender da ordem de entrada).
     """
 
-    overdue_active = sla.elapsed_ratio > 1.0 and not sla.paused
     return (
-        0 if overdue_active else 1,
+        _severity_rank(sla),
+        sla.deadline_at,
         -PRIORITY_WEIGHT.get(priority, PRIORITY_WEIGHT["normal"]),
         opened_at,
+        case_id,
     )
+
+
+def sort_by_attention(assessed: Iterable[tuple[Any, SlaAssessment]]) -> list[tuple[Any, SlaAssessment]]:
+    """Order ``(case, sla)`` pairs for the console queue (``sort=attention``).
+
+    ``case`` needs ``priority``, ``opened_at`` and ``case_id``. Pure: returns
+    a new list and never touches the input.
+    """
+
+    return sorted(
+        assessed,
+        key=lambda item: attention_sort_key(
+            priority=item[0].priority,
+            opened_at=item[0].opened_at,
+            sla=item[1],
+            case_id=item[0].case_id,
+        ),
+    )
+
+
+_SEVERITY_RANK = {"red": 0, "yellow": 1, "green": 2}
+_PAUSED_RANK = len(_SEVERITY_RANK)
+
+
+def _severity_rank(sla: SlaAssessment) -> int:
+    if sla.paused:
+        return _PAUSED_RANK
+    return _SEVERITY_RANK.get(sla.color, _PAUSED_RANK - 1)
 
 
 def matches_color_filter(sla: SlaAssessment, color: str) -> bool:

@@ -22,7 +22,9 @@ Abra `domains/concessoes-manutencao/domain.yaml` e mostre:
 - bloco `sla`: `urgent_minutes: 240` com `basis` apontando o item do anexo.
 
 Depois `domains/lgpd-titular/domain.yaml`: `pedido_titular` -> `normal` e
-`normal_minutes: 21600` (15 dias, LGPD art. 19, II).
+`normal_minutes: 21600` (15 dias: prazo legal do acesso, LGPD art. 19, II;
+meta interna demo para exclusao e correcao, cujo prazo segue regulamento,
+art. 18, §5º).
 
 Mensagem: um dominio novo e YAML, conhecimento e evals; o nucleo nao muda.
 
@@ -36,7 +38,7 @@ Cada linha prova um elo: "fio exposto" vira urgente com prazo de 4h; tela
 apagada vira 24h; pichacao vira 5 dias; vandalismo com vidro quebrado sobe
 para urgente.
 
-## 3. Os evals provam classificacao e confinamento (1 min)
+## 3. Os evals cobrem classificacao e confinamento (1 min)
 
 ```bash
 python -m app.evals.run_domain_eval concessoes-manutencao

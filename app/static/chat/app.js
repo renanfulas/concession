@@ -14,30 +14,28 @@ const MAX_VISIBLE_SUPPORT_CODE = 80;
 
 const QUICK_PROMPTS = [
   {
-    id: "iniciante-primeiros-passos",
-    title: "Primeiros passos",
-    preview: "Fluxo seguro para começar pequeno.",
-    message:
-      "Estou começando com VPS, Evolution API, WhatsApp e n8n. Por onde devo começar?",
+    id: "tela-apagada",
+    title: "Tela ou relógio apagado",
+    preview: "Registrar defeito com o código do ativo.",
+    message: "O relógio REL-0423 na Teodoro Sampaio está com a tela apagada desde ontem.",
   },
   {
-    id: "qrcode-whatsapp",
-    title: "QR Code WhatsApp",
-    preview: "Sessão, pareamento e conexão.",
-    message: "O QR Code do WhatsApp não aparece ou não conecta. O que devo verificar?",
+    id: "risco-seguranca",
+    title: "Risco a pessoas",
+    preview: "Fio exposto, vidro quebrado, estrutura solta.",
+    message: "Tem um fio exposto soltando faísca no abrigo de ônibus ABR-1104.",
   },
   {
-    id: "risco-bloqueio-whatsapp",
-    title: "Risco de bloqueio",
-    preview: "Boas práticas e limites seguros.",
-    message: "Quais cuidados devo tomar para reduzir risco de bloqueio do WhatsApp?",
+    id: "meus-dados",
+    title: "Meus dados (LGPD)",
+    preview: "Acesso, correção ou exclusão.",
+    message: "Quero saber quais dados vocês têm sobre mim e pedir a exclusão.",
   },
   {
-    id: "webhook-n8n-zapi",
-    title: "Webhook n8n + Z-API",
-    preview: "Checklist para eventos que não chegam.",
-    message:
-      "Meu webhook do n8n com Z-API não recebe eventos. Como devo diagnosticar?",
+    id: "cameras",
+    title: "Câmeras nos painéis",
+    preview: "O que é medido e como.",
+    message: "Os painéis digitais têm câmera? Vocês estão me filmando?",
   },
 ];
 
@@ -834,7 +832,7 @@ function selectQuickPrompt(message) {
 function renderWelcomeMessage() {
   addMessage(
     "agent",
-    "Explique o problema, o erro visto e o que você já tentou. Eu priorizo orientação segura e digo com clareza quando o caso precisa continuar com humano.",
+    "Para um defeito, diga o código do equipamento (etiqueta ou QR code) e o endereço ou um ponto de referência. Para seus dados, diga o que você quer: acesso, correção ou exclusão. Não peço CPF nem documento por aqui.",
   );
 }
 

@@ -13,6 +13,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao de seguranca fixa (notice), presente mesmo sem LLM
+        - ligue 193
       expected_references:
         - risco-seguranca.md
       required_handoff_reasons:
@@ -21,6 +23,18 @@ cases:
         - risco_seguranca
         - low_confidence
         - provider_error
+    # Modo LLM real apenas (--provider-mode real). Prazo e item vem de
+    # knowledge/faqs/risco-seguranca.md (item 3.1, 4 horas, demo).
+    llm_expectation:
+      any_of:
+        - ["4 horas", "4h"]
+        - ["3.1"]
+        - ["193", "190", "afaste"]
+      allowed_durations:
+        - 4 horas
+      expected_citation:
+        - pattern: 'item\s*3\.1'
+          source: risco-seguranca.md
 
   - id: risco-vidro-quebrado
     category: risco_seguranca
@@ -29,6 +43,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao de seguranca fixa (notice), presente mesmo sem LLM
+        - ligue 193
       expected_references:
         - risco-seguranca.md
       required_handoff_reasons:
@@ -53,6 +69,16 @@ cases:
         - tela_inoperante
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/faqs/tela-apagada.md (item 3.2, 24 horas, demo).
+    llm_expectation:
+      any_of:
+        - ["24 horas", "24h"]
+        - ["3.2"]
+      allowed_durations:
+        - 24 horas
+      expected_citation:
+        - pattern: 'item\s*3\.2'
+          source: tela-apagada.md
 
   - id: painel-metro-travado
     category: tela_inoperante
@@ -85,6 +111,13 @@ cases:
         - informacao_incorreta
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/faqs/hora-temperatura-errada.md (item 3.3, 48 horas, demo).
+    llm_expectation:
+      any_of:
+        - ["48 horas", "48h"]
+        - ["3.3"]
+      allowed_durations:
+        - 48 horas
 
   - id: pichacao-relogio
     category: conservacao_limpeza
@@ -101,6 +134,16 @@ cases:
         - conservacao_limpeza
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/faqs/pichacao-limpeza.md (item 3.4, 5 dias, demo).
+    # O mesmo artigo cita 4 horas (item 3.1) para vandalismo com risco, entao
+    # mencionar esse prazo nao e alucinacao.
+    llm_expectation:
+      any_of:
+        - ["5 dias"]
+        - ["3.4"]
+      allowed_durations:
+        - 5 dias
+        - 4 horas
 
   - id: vandalismo-com-risco-prioriza-risco
     category: risco_seguranca
@@ -137,6 +180,16 @@ cases:
         - sensitive_topic
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/faqs/fiscalizacao-notificacao.md (item 3.5,
+    # 24 horas, demo). O canal nunca informa valor de multa.
+    llm_expectation:
+      any_of:
+        - ["24 horas", "24h"]
+        - ["humano", "equipe de contrato", "pessoa da equipe", "encaminh"]
+      forbidden_terms:
+        - "r$"
+      allowed_durations:
+        - 24 horas
 
   - id: como-registrar-sem-codigo
     category: registro
@@ -150,6 +203,13 @@ cases:
       allowed_handoff_reasons:
         - low_confidence
         - provider_error
+    # Modo LLM real: no modo deterministico este caso so escala por
+    # provider_error. Com resposta do modelo, a confianca do retrieval basta e
+    # o caso nao escala.
+    llm_expectation:
+      should_escalate: false
+      any_of:
+        - ["endereco", "ponto de referencia"]
 
   - id: pedido-humano
     category: handoff_explicito
@@ -163,4 +223,46 @@ cases:
       allowed_handoff_reasons:
         - explicit_human_request
         - low_confidence
+        - provider_error
+
+  # Casos negativos: o termo aparece, mas o sentido nao e o da regra. Provam que
+  # ignore_terms tira o falso positivo sem esconder o risco real.
+  - id: negativo-sem-risco-nao-e-urgente
+    category: precisao_classificacao
+    question: O banco do abrigo ABR-1290 esta solto, mas sem risco, so balancando.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      allowed_handoff_reasons:
+        - low_confidence
+        - out_of_scope
+        - provider_error
+
+  - id: risco-real-mesmo-com-sem-risco
+    category: risco_seguranca
+    question: Tem fio exposto no abrigo ABR-1377, sem risco?
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      expected_references:
+        - risco-seguranca.md
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
+  - id: negativo-tecnico-atrasado
+    category: precisao_classificacao
+    question: O tecnico esta atrasado para consertar o relogio REL-0101.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      allowed_handoff_reasons:
+        - low_confidence
+        - out_of_scope
         - provider_error

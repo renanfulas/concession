@@ -1,14 +1,51 @@
 from __future__ import annotations
 
+from datetime import date
 import ipaddress
 import re
 from typing import Any
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 
-REDACTION_VERSION = "phase0-v1"
+REDACTION_VERSION = "phase0-v2"
+# Versions whose stored text was sanitized by a known rule set and may be read
+# back (transcript, history recall). phase0-v1 masked more digit runs than v2
+# (dates, protocols), never fewer, so its rows stay safe to read.
+READABLE_REDACTION_VERSIONS: tuple[str, ...] = ("phase0-v1", "phase0-v2")
 REDACTED_SECRET = "[REDACTED_SECRET]"
 REDACTED_CARD = "[REDACTED_CARD]"
+REDACTED_CPF = "[REDACTED_CPF]"
+# CPF with the usual mask (000.000.000-00 or 000000000-00): the shape alone is
+# unambiguous, so it is masked even when the check digits fail (a mistyped CPF
+# is still a person's number).
+# Digit-only boundaries: a CPF glued to letters ("CPF12345678909", "id_...")
+# is still caught, but not one glued to more digits or inside a decimal.
+_CPF_FORMATTED = re.compile(
+    r"(?<!\d)(?<!\d[.,/])\d{3}\.?\d{3}\.?\d{3}-\d{2}(?!\d)(?![.,/-]\d)"
+)
+# Bare 11-digit run: only a CPF when the check digits match; otherwise it falls
+# through to the phone rule, which still masks it.
+_CPF_RAW = re.compile(r"(?<!\d)(?<!\d[.,/-])\d{11}(?!\d)(?![.,/-]\d)")
+# Audit-safe spans that the phone rule must not touch. Card, secret, URI,
+# e-mail and IP rules still see the full text.
+# ISO 8601 date, optionally with time and offset; the calendar date is checked
+# in code (2024-02-30 is not shielded).
+_ISO_DATE = re.compile(
+    r"(?<![\w.:/-])(?P<y>\d{4})-(?P<m>0[1-9]|1[0-2])-(?P<d>0[1-9]|[12]\d|3[01])"
+    r"(?:[T ](?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:[.,]\d{1,6})?)?"
+    r"(?:Z|[+-](?:[01]\d|2[0-3]):?[0-5]\d)?)?"
+    r"(?![\w:/-]|[.,]\d)"
+)
+# Protocol number right after an explicit label. Only 13-20 contiguous digits:
+# shorter runs could be a Brazilian phone (8-11 digits, 12 with country code)
+# and stay masked even after a label; 13-digit runs starting with 55 (+55
+# mobile without the plus) are rejected in code. Card numbers are redacted
+# before this shield is consulted.
+_LABELED_PROTOCOL = re.compile(
+    r"(?<!\w)(?:(?i:protocolo|protocol|chamado|ticket|ordem\s+de\s+servi[c\u00e7]o)|OS)"
+    r"\s*(?:(?i:n[\u00ba\u00b0o]|n\.|n\u00famero|numero)\s*)?[:#]?\s*"
+    r"(?P<number>\d{13,20})(?![\w/-]|[.,]\d)"
+)
 # Candidate PAN: 13-19 digits grouped in runs separated by single spaces or
 # dashes. Bounded quantifiers keep the regex linear (no ReDoS). The lookarounds
 # reject candidates glued to other digits or a decimal point.
@@ -193,15 +230,84 @@ def contains_card_number(text: str | None) -> bool:
     if not text:
         return False
     for match in _CARD_CANDIDATE.finditer(text):
-        digits = re.sub(r"\D", "", match.group(0))
-        if _is_card_number(digits):
+        if _is_card_candidate(match.group(0)):
             return True
     return False
 
 
+# A PAN is written in 4-4-4-4 / 4-6-5 groups, never as YYYY-MM-DD; a candidate
+# that starts like an ISO date is a date followed by other numbers.
+_ISO_DATE_GROUPING = re.compile(r"\d{4}-\d{2}-\d{2}(?!\d)")
+
+
+def _is_card_candidate(raw: str) -> bool:
+    if _ISO_DATE_GROUPING.match(raw):
+        return False
+    return _is_card_number(re.sub(r"\D", "", raw))
+
+
 def _redact_card(match: re.Match[str]) -> str:
-    digits = re.sub(r"\D", "", match.group(0))
-    return REDACTED_CARD if _is_card_number(digits) else match.group(0)
+    return REDACTED_CARD if _is_card_candidate(match.group(0)) else match.group(0)
+
+
+def _is_cpf(digits: str) -> bool:
+    """Validate an 11-digit string against the CPF check-digit algorithm."""
+    if len(digits) != 11 or len(set(digits)) == 1:
+        return False
+    nums = [ord(c) - 48 for c in digits]
+    for position in (9, 10):
+        total = sum(nums[i] * (position + 1 - i) for i in range(position))
+        expected = (total * 10) % 11 % 10
+        if nums[position] != expected:
+            return False
+    return True
+
+
+def _redact_raw_cpf(match: re.Match[str]) -> str:
+    return REDACTED_CPF if _is_cpf(match.group(0)) else match.group(0)
+
+
+def _protected_spans(text: str) -> list[tuple[int, int]]:
+    """Spans of audit-safe values (ISO dates, labeled protocols) in ``text``."""
+    spans: list[tuple[int, int]] = []
+    for match in _ISO_DATE.finditer(text):
+        try:
+            date(int(match.group("y")), int(match.group("m")), int(match.group("d")))
+        except ValueError:
+            continue  # not a calendar date: leave it to the phone rule
+        spans.append(match.span())
+    for match in _LABELED_PROTOCOL.finditer(text):
+        number = match.group("number")
+        if number.startswith("55") and len(number) == 13:
+            continue  # +55 mobile written without the plus sign
+        spans.append(match.span("number"))
+    spans.sort()
+    merged: list[tuple[int, int]] = []
+    for start, end in spans:
+        if merged and start < merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _sub_outside_protected(
+    pattern: re.Pattern[str],
+    repl: Any,
+    text: str,
+) -> str:
+    """Apply ``pattern.sub`` only to the text between audit-safe spans."""
+    spans = _protected_spans(text)
+    if not spans:
+        return pattern.sub(repl, text)
+    parts: list[str] = []
+    cursor = 0
+    for start, end in spans:
+        parts.append(pattern.sub(repl, text[cursor:start]))
+        parts.append(text[start:end])
+        cursor = end
+    parts.append(pattern.sub(repl, text[cursor:]))
+    return "".join(parts)
 
 
 def sanitize_for_persistence(text: str | None) -> str | None:
@@ -210,7 +316,12 @@ def sanitize_for_persistence(text: str | None) -> str | None:
     if not isinstance(text, str):
         raise TypeError("persisted text must be a string")
     value = _PRIVATE_KEY_BLOCK.sub(REDACTED_SECRET, text)
+    # CPF first, so a labeled protocol can never shield it and the phone rule
+    # does not relabel it.
+    value = _CPF_FORMATTED.sub(REDACTED_CPF, value)
+    value = _CPF_RAW.sub(_redact_raw_cpf, value)
     # Redact card PANs early so the phone/IP rules cannot partially mangle them.
+    # No shield applies here: a card typed after "protocolo" is still a card.
     value = _CARD_CANDIDATE.sub(_redact_card, value)
     value = _SENSITIVE_HEADER.sub(
         lambda match: f"{match.group('name')} {REDACTED_SECRET}",
@@ -251,7 +362,10 @@ def sanitize_for_persistence(text: str | None) -> str | None:
     value = _EMAIL.sub("[REDACTED_EMAIL]", value)
     value = _IPV4.sub("[REDACTED_IP]", value)
     value = _IPV6_CANDIDATE.sub(_sanitize_ipv6, value)
-    value = _PHONE.sub("[REDACTED_PHONE]", value)
+    # The phone rule is deliberately broad (it also masks RG, bank accounts and
+    # other long digit runs); ISO dates and labeled protocols are exempt so the
+    # audit trail keeps its timestamps and case references.
+    value = _sub_outside_protected(_PHONE, "[REDACTED_PHONE]", value)
     return value
 
 

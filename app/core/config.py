@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="concession", alias="APP_NAME")
     app_env: str = Field(default="development", alias="APP_ENV")
     default_domain: str = Field(
-        default="suporte-vps-whatsapp",
+        default="concessoes-manutencao",
         alias="DEFAULT_DOMAIN",
     )
     domains_path: Path = Field(default=Path("domains"), alias="DOMAINS_PATH")
@@ -252,6 +252,13 @@ class Settings(BaseSettings):
     whatsapp_router_domains: str = Field(
         default="concessoes-manutencao,lgpd-titular",
         alias="WHATSAPP_ROUTER_DOMAINS",
+    )
+    # /web/chat routes by message across WHATSAPP_ROUTER_DOMAINS (same list and
+    # same router as WhatsApp). On by default so the demo reaches both domains
+    # without .env; false pins the web chat to DEFAULT_DOMAIN.
+    enable_web_domain_router: bool = Field(
+        default=True,
+        alias="ENABLE_WEB_DOMAIN_ROUTER",
     )
     meta_whatsapp_access_token: str | None = Field(
         default=None,

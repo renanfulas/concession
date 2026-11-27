@@ -1,4 +1,7 @@
-# Politica de Seguranca - supportFAQagent
+# Politica de Seguranca - concession
+
+Demo derivada do nucleo `supportFAQagent`; o historico de incidentes e
+follow-ups operacionais daquele projeto ficou no repositorio de origem.
 
 ## Versao suportada
 
@@ -84,9 +87,6 @@ Hermes) com forward do inbound para `POST /integrations/hermes/chat/webhook`.
 
 ### Follow-ups de seguranca em aberto
 
-- Rotacionar a senha root da VPS (foi exposta em canal de chat operacional).
-- Revisar/remover chaves SSH operacionais temporarias quando nao forem mais
-  necessarias (ex.: `claude-code-supportfaq-vps`).
 - Assinar o `X-Webhook-Timestamp` dentro do HMAC do forward (hoje a assinatura
   cobre so o body). Reduz replay de forma definitiva, mas exige rollout coordenado
   por ser uma mudanca no contrato de wire; ate la, o `HermesReplayGuard` cobre o

@@ -5,6 +5,26 @@ from app.ingestion.chunking import split_text
 from app.ingestion.models import KnowledgeChunk, KnowledgeDocument
 
 
+def knowledge_source_id(domain: DomainConfig, file_path: Path) -> str:
+    """Stable, public identifier for a domain knowledge file.
+
+    Format: ``domains/<dominio>/<caminho relativo POSIX>``, e.g.
+    ``domains/concessoes-manutencao/knowledge/articles/anexo-niveis-de-servico.md``.
+    It never carries the server's absolute path, drive letter or backslashes,
+    and it is identical on every machine, so it is safe to return in
+    ``references`` and to use as the ``articles.source`` key in pgvector.
+    """
+    try:
+        relative = file_path.relative_to(domain.root_path).as_posix()
+    except ValueError:
+        try:
+            relative = file_path.resolve().relative_to(domain.root_path.resolve()).as_posix()
+        except ValueError:
+            # Source outside the domain folder: expose only the file name.
+            relative = file_path.name
+    return f"domains/{domain.name}/{relative}"
+
+
 class IngestionService:
     def load_domain_documents(self, domain: DomainConfig) -> list[KnowledgeDocument]:
         documents: list[KnowledgeDocument] = []
@@ -21,7 +41,7 @@ class IngestionService:
                 }:
                     continue
 
-                documents.append(self._read_document(file_path))
+                documents.append(self._read_document(domain, file_path))
 
         return documents
 
@@ -46,11 +66,11 @@ class IngestionService:
 
         return chunks
 
-    def _read_document(self, file_path: Path) -> KnowledgeDocument:
+    def _read_document(self, domain: DomainConfig, file_path: Path) -> KnowledgeDocument:
         content = file_path.read_text(encoding="utf-8")
         title = file_path.stem.replace("-", " ").replace("_", " ").title()
         return KnowledgeDocument(
-            source=str(file_path),
+            source=knowledge_source_id(domain, file_path),
             title=title,
             content=content.strip(),
         )
