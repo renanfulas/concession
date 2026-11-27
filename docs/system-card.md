@@ -51,7 +51,7 @@ Does not:
 | Data | Where | Handling | Legal basis (LGPD art. 7) — demo |
 | --- | --- | --- | --- |
 | Citizen phone number | channel identity, OTP | stored as HMAC hash and last 4 digits; the full number appears in the "`wa_id`" and "destination phone" rows below | legitimate interest (art. 7, IX) or public policy execution (art. 7, III); to be confirmed by the real DPO |
-| Message text | conversations and tickets | masked before persistence (card, CNPJ, e-mail, phone, IP); `app/core/persistence_sanitize.py`. The text is sent **raw** to the LLM provider (see "International transfer") | same |
+| Message text | conversations and tickets | masked before persistence (CPF with check digits, card, e-mail, phone and other long digit runs, IP); ISO dates and labeled protocol numbers stay readable for the audit trail; `app/core/persistence_sanitize.py`. The text is sent **raw** to the LLM provider (see "International transfer") | same |
 | Session identifier | short history | only the hash reaches database and logs | same |
 | OTP code | identity verification | digest only; expires | legal obligation (art. 7, II: serving the data subject safely) |
 | Citizen name and e-mail | `customers.display_label` and `customers.email` (migration 013, `app/db/operational.py:634-642` and `:690-696`); team alert text | given at the web handoff consent gate; name goes through `sanitize_for_persistence`; e-mail is format-validated and stored readable because the team uses it for contact | consent (art. 7, I), collected at the consent gate |
@@ -89,9 +89,10 @@ Suggested rating: **medium risk**, mandatory human review.
 | Control | Where | Evidence |
 | --- | --- | --- |
 | Scope, prompt and secret confinement | `docs/security/llm-confinement.md` (concession domains section), `domains/*/evals/confinement/` | confinement evals cover 33 cases (17 maintenance, 16 LGPD), all passing |
-| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals cover 20 cases (10 per domain), all passing |
+| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals cover 26 cases (13 per domain), including negative cases (term present with another meaning), all passing |
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
-| Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_privacy.py` |
+| Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193" and "nunca pede senha" even without an LLM |
+| Masking before persistence | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
 | Logs without tokens or raw `session_id`; PII only in the exceptions listed under "Known limits" | `app/core/logging.py`, `docs/architecture/observability.md` | `tests/test_observability_hardening.py` |
 | Consent before direct contact | consent gate on tickets | web handoff tests |
 | Traceability | `request_id` on every response; audited case events | `tests/test_request_observability.py` |
@@ -106,8 +107,9 @@ Suggested rating: **medium risk**, mandatory human review.
 - The staff remember cookie carries the E.164 phone in clear.
 - The `lgpd-titular` SLA `basis` cites art. 19, II for every `pedido_titular`, including deletion and correction, whose deadline follows regulation (art. 18, §5); there the 15 days are an internal target.
 - Without an LLM key, evals check retrieval, classification and handoff, not generated text quality.
-- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue.
-- No dedicated CPF detector with check digits.
+- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue. Known false positives are handled with per-rule `ignore_terms` and proven by negative eval cases; words in between the terms ("relogio REL-0423 esta apagado") still do not match.
+- A protocol number without a label ("protocolo", "chamado", "ticket", "OS", "ordem de servico") or shorter than 13 digits is still masked: when in doubt, a number is treated as personal data. A protocol that passes the card checksum (Luhn) becomes `[REDACTED_CARD]`.
+- Known masking limits: a phone glued to letters (`telefone11...`) is not caught; a formatted CNPJ is only partly masked; an ISO birth date stays readable (dd/mm/yyyy already did).
 - Writing the case priority to a real PostgreSQL was not verified in this copy.
 - No web UI for the console; the console is an API.
 

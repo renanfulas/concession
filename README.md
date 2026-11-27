@@ -10,6 +10,9 @@ com o prazo da LGPD e coloca os dois na mesma fila auditada do time.
 > `supportFAQagent`, um agente de suporte cujos planos e runbooks de staging
 > ficaram no repositorio de origem (ver `docs/archive/README.md`).
 
+**English:** [summary in English](#english-summary) ·
+[system card](docs/system-card.md).
+
 ## O problema
 
 Uma concessao de mobiliario urbano vive de prazos que nao sao do time:
@@ -72,9 +75,9 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 949 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
-| Evals `concessoes-manutencao` (base + confinamento) | 27/27 |
-| Evals `lgpd-titular` (base + confinamento) | 26/26 |
+| Testes automatizados (`python -m pytest`) | 1048 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
+| Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
+| Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
 | Gravacao da prioridade no ticket contra PostgreSQL real | nao verificada nesta copia (suite de integracao precisa de Docker) |
 | Tela web do console (`/team`) | nao existe; o console e uma API |
@@ -138,3 +141,95 @@ recuperadas e
 entrega o caso para uma pessoa com o prazo certo. Nao executa exclusao de
 dados, nao discute multa, nao promete prazo menor que o do contrato e nao
 revela dado pessoal pelo chat.
+
+---
+
+## English summary
+
+`concession` is a RAG service desk for street furniture and outdoor
+advertising concessions. It logs asset defects against the contract's
+service-level deadline, handles data subject requests against the LGPD
+(Brazil's data protection law) deadline, and puts both in the same audited
+queue for the team.
+
+> **Demo environment.** The contract, maintenance deadlines, asset inventory
+> and privacy notice are fictional and labeled as such in every file. They do
+> not represent any real company. The core comes from `supportFAQagent`, a
+> support agent that has run in a real staging environment.
+
+### The problem
+
+A street furniture concession runs on deadlines the team does not set:
+
+- **Contract deadline.** A dark street clock or a shelter with broken glass
+  has a response time in the service-level annex. Missing it risks penalties
+  and weakens the renewal case, and a dark screen is advertising that is not
+  delivered.
+- **Legal deadline.** A citizen who asks "are you filming me?" or requests
+  deletion of their data is entitled to an answer within 15 days (LGPD
+  art. 19, II).
+- **Evidence.** In both cases, the auditor wants to see when the request
+  arrived, which deadline applied and who handled it.
+
+### What it does
+
+```text
+Citizen, technician or auditor (WhatsApp or web)
+  -> domain router (maintenance | privacy)
+  -> retrieval over the domain knowledge base (SLA annex, privacy notice)
+  -> answer citing the source, or a safe fallback
+  -> domain rule classifies the request (e.g. exposed wire = risco_seguranca)
+  -> ticket with priority (urgent | high | normal | low)
+  -> SLA traffic light with the deadline and its basis (clause or article)
+```
+
+| Domain | Example request | Classification | Console deadline | Basis |
+| --- | --- | --- | --- | --- |
+| `concessoes-manutencao` | Exposed wire sparking at shelter ABR-1104 | `risco_seguranca` -> urgent | 4h | SLA annex (demo), item 3.1 |
+| `concessoes-manutencao` | Clock REL-0423 has a dark screen | `tela_inoperante` -> high | 24h | SLA annex (demo), item 3.2 |
+| `concessoes-manutencao` | Graffiti on the clock at Praca da Se | `conservacao_limpeza` -> low | 5 days | SLA annex (demo), item 3.4 |
+| `lgpd-titular` | "I want my data deleted" | `pedido_titular` -> normal | 15 days | LGPD art. 19, II |
+| `lgpd-titular` | "I think my data leaked" | `incidente_dados` -> urgent | 4h | internal target (demo) |
+
+The same SLA engine handles a contract deadline (hours) and a legal deadline
+(days). Each domain declares its own in its `domain.yaml`, with no new code in
+the core. Requests to the bot are in Portuguese; the examples above are
+translated.
+
+### What works today
+
+- **Two new domains** with knowledge base, prompts and evals:
+  `concessoes-manutencao` (maintenance) and `lgpd-titular` (data subject).
+- **Per-domain SLA**: an `sla:` block in `domain.yaml` overrides the global
+  SLA, and the deadline's source (`basis`) is shown on every console case.
+- **Priority by request type**: `escalation_rules[].priority` sets the ticket
+  priority; when several rules match, the highest wins.
+- **Evals that prove classification**: `required_handoff_reasons` requires
+  "exposed wire" to raise `risco_seguranca`, not just that nothing unexpected
+  shows up.
+- **Inherited from the core**: FastAPI API, per-message domain routing,
+  lexical or pgvector retrieval, OpenAI or Anthropic provider with safe
+  fallback, handoff taxonomy, durable tickets with an SLA console and audited
+  transitions, WhatsApp OTP with LGPD consent, masking of card numbers, CNPJ,
+  e-mail, phone and IP before persistence, and a `request_id` on every
+  response.
+
+### Status and limits
+
+The status table above applies as is. In short: 1048 tests pass (44 skipped
+PostgreSQL integration tests need a database), and the domain evals pass
+(30/30 maintenance, 29/29 data subject, 20/20 reference domain). The evals run
+without an LLM key, so they check retrieval, cited references, classification
+and escalation, not the quality of model-generated text. Priority persistence
+against a real PostgreSQL database is not yet verified in this copy, and the
+team console is an API with no web screen yet.
+
+The system does not decide on its own. It logs, classifies, cites the source
+and hands the case to a person with the right deadline. It does not execute
+data deletion, discuss penalties, promise a deadline shorter than the
+contract's or disclose personal data in the chat.
+
+Governance: the [system card](docs/system-card.md) lists owner, data
+processed, legal basis, criticality, controls and limits, in the format of an
+AI solution inventory. Coding agents follow `CLAUDE.md` and the skills in
+`.agents/skills/`.
