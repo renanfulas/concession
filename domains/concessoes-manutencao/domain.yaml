@@ -1,6 +1,6 @@
 contract_version: 1
 name: concessoes-manutencao
-display_name: Manutencao de Mobiliario Urbano
+display_name: Manutenção de Mobiliário Urbano
 description: >-
   Agente de primeiro atendimento para registrar defeitos em relogios de rua,
   abrigos de onibus e paineis digitais de uma concessao de mobiliario urbano,
