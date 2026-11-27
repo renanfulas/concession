@@ -89,7 +89,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Control | Where | Evidence |
 | --- | --- | --- |
 | Scope, prompt and secret confinement | `docs/security/llm-confinement.md` (concession domains section), `domains/*/evals/confinement/` | confinement evals cover 33 cases (17 maintenance, 16 LGPD), all passing |
-| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals cover 26 cases (13 per domain), including negative cases (term present with another meaning), all passing |
+| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals cover 36 cases (21 maintenance, 15 LGPD), including negative cases (term present with another meaning, negated, or inside another word), all passing |
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193", "nunca pede senha", "4 horas" (incident) and "24 horas" (auditor notice) even without an LLM |
 | Development login limited to the local machine | `ENABLE_TEAM_DEV_LOGIN` (default `false`), `app/support/dev_login.py`: refuses to boot without an explicit `APP_ENV=development`; needs a loopback peer and `Host`; refuses proxy headers | `tests/test_team_dev_login.py` |
@@ -110,7 +110,7 @@ Suggested rating: **medium risk**, mandatory human review.
 - The staff remember cookie carries the E.164 phone in clear.
 - The `lgpd-titular` SLA `basis` cites art. 19, II for every `pedido_titular`, including deletion and correction, whose deadline follows regulation (art. 18, §5); there the 15 days are an internal target.
 - Without an LLM key, evals check retrieval, classification and handoff, not generated text quality.
-- Term-based (substring) classification: unforeseen synonyms fall into `low_confidence` and go to a person; safe, but it can grow the queue. Known false positives are handled with per-rule `ignore_terms` and proven by negative eval cases; words in between the terms ("relogio REL-0423 esta apagado") still do not match.
+- Term-based classification (word start, `app/handoff/term_match.py`): a term matches at the start of a word (`picha` covers "picharam", but `risco` does not match inside "arrisco"), allows up to 2 content words inside a multi-word term (asset codes and function words do not count: "relogio REL-0423 esta apagado"), and skips simple negation right before, inside or right after the term ("sem risco", "nao ha nenhum risco", "o painel nao esta apagado", "risco nenhum"). It stays deterministic, with no LLM. Limits: unforeseen synonyms, more than 2 words in between ("o relogio da praca central ficou apagado") and negation that is farther away or worded differently ("nao esta com a hora errada") are not recognized. Negation errors fail safe: an unrecognized negation opens the case with the term's priority; a term that does not match leaves the turn on `low_confidence`, which goes to a person (safe, but it can grow the queue). Senses negation cannot express ("risco de multa", "tecnico atrasado") stay in per-rule `ignore_terms`; all of it is proven by negative and positive eval cases. The gap can raise a false high priority ("outra vez a pessoa" matches `outra pessoa` in the LGPD domain), always in the direction of sending the turn to a person.
 - A protocol number without a label ("protocolo", "chamado", "ticket", "OS", "ordem de servico") or shorter than 13 digits is still masked: when in doubt, a number is treated as personal data. A protocol that passes the card checksum (Luhn) becomes `[REDACTED_CARD]`.
 - Known masking limits: a phone glued to letters (`telefone11...`) is not caught; a formatted CNPJ is only partly masked; an ISO birth date stays readable (dd/mm/yyyy already did).
 - Writing the case priority to a real PostgreSQL was not verified in this copy.
@@ -124,3 +124,4 @@ Suggested rating: **medium risk**, mandatory human review.
 | 2026-11-26 | IT (AI development) — sample (demo) | first version |
 | 2026-11-26 | coding agent, human review pending | data, transfer and limits aligned with the code |
 | 2026-11-27 | coding agent, human review pending | AI solution intake: owner data, controls and limits |
+| 2026-11-27 | coding agent, human review pending | word-start classification with a short gap and simple negation; limit and eval counts updated |

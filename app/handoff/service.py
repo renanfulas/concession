@@ -2,6 +2,7 @@ from app.core.persistence_sanitize import contains_card_number
 from app.core.text import fold
 from app.domain_engine.models import DomainConfig
 from app.handoff.models import HandoffDecision
+from app.handoff.term_match import matches_rule
 
 
 class HandoffService:
@@ -152,11 +153,10 @@ class HandoffService:
         ):
             self._append_reason(reasons, "sensitive_topic")
 
+        # Domain rules match at word starts, with a small gap and simple negation
+        # (see app/handoff/term_match.py); the fixed patterns below stay substring.
         for rule in domain.handoff.escalation_rules:
-            if rule.reason and self._contains_any(
-                self._without_phrases(normalized_question, rule.ignore_terms),
-                rule.terms,
-            ):
+            if rule.reason and matches_rule(question, rule.terms, rule.ignore_terms):
                 self._append_reason(reasons, rule.reason)
 
         if self._contains_any(normalized_question, self.SECRET_REQUEST_PATTERNS):
@@ -238,14 +238,6 @@ class HandoffService:
         # fold() is idempotent, so callers may pass raw or already-folded text.
         folded_text = fold(text)
         return any(fold(term) in folded_text for term in terms if term.strip())
-
-    def _without_phrases(self, text: str, phrases: list[str]) -> str:
-        folded_text = fold(text)
-        for phrase in phrases:
-            folded_phrase = fold(phrase)
-            if folded_phrase.strip():
-                folded_text = folded_text.replace(folded_phrase, " ")
-        return folded_text
 
     def _append_reason(self, reasons: list[str], reason: str) -> None:
         if reason not in reasons:

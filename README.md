@@ -78,8 +78,8 @@ novo no nucleo.
   (Luhn), e-mail, telefone e IP saem mascarados antes de persistir e antes de a
   pergunta ir ao provedor de LLM e de embeddings; datas ISO e protocolos com
   rotulo ficam legiveis para a trilha de auditoria.
-- **Evals que cobrem a classificacao** (26 casos base, 13 por dominio, com
-  casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
+- **Evals que cobrem a classificacao** (36 casos base: 21 manutencao, 15
+  LGPD, com casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
   `risco_seguranca`, e nao so que nada inesperado apareca.
 - **Intake e inventario de solucoes de IA (`/team/intake`)**: a unidade de
   negocio submete uma iniciativa de IA; regras fixas calculam a criticidade
@@ -117,9 +117,9 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 1284 passam, 55 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
-| Evals `concessoes-manutencao` (base + confinamento) | 30/30, com 3 casos negativos de precisao |
-| Evals `lgpd-titular` (base + confinamento) | 29/29, com 3 casos de precisao e injecao |
+| Testes automatizados (`python -m pytest`) | 1336 passam, 55 pulados (integracao PostgreSQL: rodam contra banco real no job `postgres` do Phase 0 Gates) |
+| Evals `concessoes-manutencao` (base + confinamento) | 38/38, com 7 casos negativos de precisao |
+| Evals `lgpd-titular` (base + confinamento) | 31/31, com 4 casos de precisao e injecao |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
 | Gravacao da prioridade no ticket contra PostgreSQL real | verificada: `tests/integration/test_demo_seed_console_postgres.py` grava pelo `record_chat` e le pela API do console, no job `postgres` do Phase 0 Gates |
 | Tela web do console (`/team`) | somente leitura: fila, semaforo e filtros; assumir/fechar seguem pela API |
@@ -308,8 +308,8 @@ translated.
   card numbers (Luhn), e-mail, phone and IP are masked before persistence and
   before the question reaches the LLM and embeddings providers; ISO dates and
   labeled protocol numbers stay readable for the audit trail.
-- **Evals that cover classification** (26 base cases, 13 per domain,
-  including negative cases): `required_handoff_reasons` requires "exposed
+- **Evals that cover classification** (36 base cases: 21 maintenance, 15
+  LGPD, including negative cases): `required_handoff_reasons` requires "exposed
   wire" to raise `risco_seguranca`, not just that nothing unexpected shows up.
 - **AI solution intake and inventory (`/team/intake`)**: a business unit
   submits an AI initiative; fixed rules set its criticality (sensitive data or
@@ -343,11 +343,11 @@ translated.
 
 ### Status and limits
 
-The status table above applies as is. In short: 1284 tests pass. The 55
+The status table above applies as is. In short: 1336 tests pass. The 55
 PostgreSQL integration tests are skipped locally and run against a real
 database in the `postgres` job of Phase 0 Gates, including priority
 persistence from `record_chat` to the console API. The domain evals pass
-(30/30 maintenance, 29/29 data subject, 20/20 reference domain). They run
+(38/38 maintenance, 31/31 data subject, 20/20 reference domain). They run
 without an LLM key, so they check retrieval, returned sources (`references`),
 classification and escalation, not the quality of model-generated text.
 

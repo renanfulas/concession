@@ -276,3 +276,134 @@ cases:
         - low_confidence
         - out_of_scope
         - provider_error
+
+  # Casamento por inicio de palavra, com intervalo curto e negacao simples
+  # (app/handoff/term_match.py). Positivos: o termo aparece com palavras no
+  # meio, no plural ou perto de um "nao" que nao nega o risco. Negativos: a
+  # negacao ou o meio de outra palavra nao podem abrir o motivo da regra.
+  - id: positivo-palavras-entre-termos
+    category: tela_inoperante
+    question: O relogio REL-0423 esta apagado desde ontem.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      required_handoff_reasons:
+        - tela_inoperante
+      allowed_handoff_reasons:
+        - tela_inoperante
+        - low_confidence
+        - provider_error
+
+  - id: positivo-risco-plural-com-nao-perto
+    category: risco_seguranca
+    question: Tem fios expostos no abrigo ABR-1104, nao chegue perto.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+        - ligue 193
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
+  - id: positivo-nunca-vi-e-enfase-nao-negacao
+    category: risco_seguranca
+    # "nunca vi" enfatiza o risco; nao pode apagar o caso urgente.
+    question: Nunca vi fio exposto assim no abrigo ABR-1104, ta perigoso.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+        - ligue 193
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
+  - id: positivo-estrutura-solta-com-codigo-no-meio
+    category: risco_seguranca
+    question: "Nao toque: a estrutura do abrigo ABR-1501 esta solta."
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+        - ligue 193
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - defeito_geral
+        - low_confidence
+        - provider_error
+
+  - id: negativo-negacao-nenhum-risco
+    category: precisao_classificacao
+    question: Nao ha nenhum risco, o abrigo ABR-1290 so esta sujo.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      forbidden_terms:
+        - ligue 193
+      required_handoff_reasons:
+        - conservacao_limpeza
+      allowed_handoff_reasons:
+        - conservacao_limpeza
+        - low_confidence
+        - out_of_scope
+        - provider_error
+
+  - id: negativo-negacao-no-meio-do-termo
+    category: precisao_classificacao
+    question: O painel PNL-0310 nao esta apagado, so tem um adesivo colado.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      required_handoff_reasons:
+        - conservacao_limpeza
+      allowed_handoff_reasons:
+        - conservacao_limpeza
+        - low_confidence
+        - out_of_scope
+        - provider_error
+
+  - id: negativo-termo-no-meio-da-palavra
+    category: precisao_classificacao
+    # "risco" dentro de "arrisco" casava por substring e virava urgente.
+    question: Arrisco dizer que e so sujeira no abrigo ABR-1290.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      forbidden_terms:
+        - ligue 193
+      required_handoff_reasons:
+        - conservacao_limpeza
+      allowed_handoff_reasons:
+        - conservacao_limpeza
+        - low_confidence
+        - out_of_scope
+        - provider_error
+
+  - id: negativo-tecnico-ja-atrasado
+    category: precisao_classificacao
+    # "tecnico atrasado" em ignore_terms cobre as palavras no meio ("ja esta").
+    question: O tecnico ja esta atrasado para consertar o relogio REL-0101.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+      required_handoff_reasons:
+        - cobranca_atendimento
+      allowed_handoff_reasons:
+        - cobranca_atendimento
+        - low_confidence
+        - out_of_scope
+        - provider_error

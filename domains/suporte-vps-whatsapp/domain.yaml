@@ -86,6 +86,9 @@ handoff:
         - bloqueio
         - bloqueando
         - bloqueou
+        # Casamento por inicio de palavra: "bloqueio" nao casa mais dentro de
+        # "desbloqueio"; o pedido de desbloqueio continua sendo caso de bloqueio.
+        - desbloque
         - banimento
         - banido
         - api nao oficial

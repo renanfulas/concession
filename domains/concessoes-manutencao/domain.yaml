@@ -113,16 +113,11 @@ handoff:
         - pedacos de vidro
         - se cortar
         - risco
-      # "risco" sozinho casa por substring; estas frases saem do texto antes,
-      # para "banco solto, sem risco" ou "risco de multa" nao virarem urgente.
-      # Outro termo da mesma frase continua valendo ("fio exposto, sem risco?").
+      # Negacao simples ja nao casa ("sem risco", "nao ha risco", "sem nenhum
+      # risco"; ver app/handoff/term_match.py). Estas frases saem do texto antes,
+      # porque "risco de multa" nao e negacao e nao pode virar urgente. Outro
+      # termo da mesma frase continua valendo ("fio exposto, sem risco?").
       ignore_terms:
-        - sem risco
-        - sem nenhum risco
-        - nenhum risco
-        - nao ha risco
-        - nao tem risco
-        - nao oferece risco
         - risco de multa
         - risco de penalidade
         - risco de notificacao
@@ -144,11 +139,9 @@ handoff:
         - tela desligada
         - tela preta
         - tela quebrada
+        # Casa com ate 2 palavras no meio: "relogio REL-0423 esta apagado".
         - painel apagado
-        - painel esta apagado
         - relogio apagado
-        - relogio esta apagado
-        - tela esta apagada
         - sem imagem
         - nao liga
         - piscando
@@ -161,16 +154,13 @@ handoff:
         - temperatura errada
         - atrasado
         - adiantado
-      # "atrasado" fala do relogio, nao do atendimento.
+      # "atrasado" fala do relogio, nao do atendimento. Cada frase cobre tambem
+      # "tecnico esta atrasado" (ate 2 palavras no meio).
       ignore_terms:
         - tecnico atrasado
-        - tecnico esta atrasado
         - atendimento atrasado
-        - atendimento esta atrasado
         - conserto atrasado
-        - conserto esta atrasado
         - chamado atrasado
-        - chamado esta atrasado
         - prazo atrasado
     # Demais defeitos que nao impedem o uso (item 3.3). Sem esta regra, com o
     # LLM respondendo com confianca, "banco solto" nao virava caso na fila.
@@ -189,19 +179,15 @@ handoff:
       priority: normal
       terms:
         - tecnico atrasado
-        - tecnico esta atrasado
         - atendimento atrasado
-        - atendimento esta atrasado
         - conserto atrasado
-        - conserto esta atrasado
         - chamado atrasado
-        - chamado esta atrasado
         - ninguem veio
         - ainda nao consertaram
         - ainda nao vieram
     - reason: conservacao_limpeza
       priority: low
-      # Casamento por substring: "picha" cobre pichacao, pichado, picharam.
+      # Casamento por inicio de palavra: "picha" cobre pichacao, pichado, picharam.
       terms:
         - picha
         - sujo
