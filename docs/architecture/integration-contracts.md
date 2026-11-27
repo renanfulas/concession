@@ -1225,6 +1225,53 @@ Escopo do contrato:
 - tela `/team` para o time (nao existe nesta copia); a UI nao recalcula
   regra de negocio.
 
+## Intake de solucoes de IA (`/web/support/intake/*`)
+
+Desenho, politica e fluxo em `docs/architecture/ai-intake.md`. Montado so com
+`ENABLE_SUPPORT_CONSOLE=true` e `ENABLE_AI_INTAKE` ligado (padrao: ligado em
+desenvolvimento); com qualquer um desligado, a superficie inteira responde
+`404`. Fica sob `/web/support` para usar a mesma sessao staff (cookie com
+`Path=/web/support`); toda rota passa por `require_staff_session` (`401` sem
+sessao, `429` no limite de leitura) e as escritas exigem `X-Requested-With:
+XMLHttpRequest` (`403 csrf_header_required`).
+
+| Rota | O que faz |
+| --- | --- |
+| `GET /options` | listas fechadas, politica (regras, `sla_days`, `ripd_required_for`, `basis`) e `durable` |
+| `GET /solutions` | fila: pedidos abertos por pressao do prazo, depois os decididos (mais recentes primeiro); sem eventos |
+| `POST /solutions` | submete; `201` com a solucao, criticidade, motivos e prazo |
+| `GET /solutions/{id}` | detalhe com a trilha de eventos |
+| `POST /solutions/{id}/transitions` | `{action, note?, conditions?, rejection_reason?, ripd_reference?}` |
+| `GET /solutions/{id}/ficha.md` | ficha da solucao em Markdown (`attachment`, `no-store`) |
+| `GET /inventory.csv` | inventario: uma linha por solucao, `;` e BOM, formulas neutralizadas (`attachment`, `no-store`) |
+
+Erros:
+
+- campo invalido na submissao -> `422 {"code": "invalid_field", "field": "<campo>"}`
+  (ex.: `nenhum` junto de outra categoria; dado pessoal com base legal
+  `nao_se_aplica`); campo extra no corpo -> `422`; acao ou motivo fora da lista
+  -> `422 {"code": "invalid_value"}`;
+- solucao inexistente -> `404 solution_not_found`;
+- regra do fluxo -> `409 {"code", "field"}` com `code` em
+  `self_review_forbidden`, `not_the_reviewer`, `not_the_submitter`,
+  `invalid_transition` ou `missing_required_field` (`field`: `note`,
+  `conditions`, `rejection_reason` ou `ripd_reference`);
+- banco indisponivel -> `503 ai_intake_storage_unavailable`.
+
+Resposta de uma solucao: os campos declarados, `criticality`,
+`criticality_reasons` (`[{id, text}]`), `ripd_required`, `status`,
+`submitted_by_name`, `submitted_by_me`, `reviewer_name`, `reviewing_by_me`,
+`submitted_at`, `decided_at`, `decision_note`, `conditions`,
+`rejection_reason`, `ripd_reference`, `outcome` (`em_analise_no_prazo`,
+`em_analise_atrasado`, `decidido_no_prazo`, `decidido_fora_do_prazo`,
+`retirado`), `sla` (`deadline_at`, `color`, `paused`, `elapsed_ratio`,
+`paused_minutes`, `basis`) e `events` (so no detalhe e nas respostas de
+escrita).
+
+Observabilidade (sem nome, finalidade, nota ou responsavel):
+`ai_intake_submitted` (referencia, criticidade), `ai_intake_transition`
+(referencia, acao, status novo), `ai_intake_inventory_exported` (linhas).
+
 ## Ponte WhatsApp<->console (numero de suporte, Fase 1)
 
 Status: Fase 1 (chat humano bidirecional in-window) implementada em codigo,

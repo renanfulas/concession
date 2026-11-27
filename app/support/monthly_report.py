@@ -140,7 +140,7 @@ def render_csv(rows: Iterable[list[str]]) -> str:
     writer = csv.writer(buffer, delimiter=CSV_DELIMITER, lineterminator="\r\n")
     writer.writerow(COLUMNS)
     for row in rows:
-        writer.writerow([_neutralize_formula(cell) for cell in row])
+        writer.writerow([neutralize_formula(cell) for cell in row])
     return CSV_BOM + buffer.getvalue()
 
 
@@ -157,6 +157,6 @@ def _local(value: datetime, zone: ZoneInfo) -> str:
     return value.astimezone(zone).strftime("%Y-%m-%d %H:%M")
 
 
-def _neutralize_formula(cell: str) -> str:
+def neutralize_formula(cell: str) -> str:
     text = str(cell)
     return f"'{text}" if text.startswith(_FORMULA_PREFIXES) else text

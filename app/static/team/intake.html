@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Intake de soluções de IA · concession</title>
+    <link rel="stylesheet" href="/team-assets/styles.css" />
+    <link rel="stylesheet" href="/team-assets/intake.css" />
+  </head>
+  <body>
+    <div class="demo-banner" role="note">
+      <strong>Ambiente de demonstração.</strong>
+      Política de criticidade, prazos e soluções são fictícios.
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="4" y="4" width="24" height="24" rx="5" />
+          <rect x="9" y="10" width="14" height="3" rx="1.5" class="brand-panel" />
+          <rect x="9" y="16" width="9" height="3" rx="1.5" class="brand-panel" />
+          <circle cx="22" cy="21" r="2.6" class="brand-dot" />
+        </svg>
+        <div>
+          <h1>Intake de soluções de IA</h1>
+          <p class="brand-sub">Entrada padronizada · criticidade por regra · prazo de análise</p>
+        </div>
+      </div>
+      <nav class="session-box" aria-label="Navegação">
+        <a class="button-ghost" href="/team">Fila do time</a>
+        <span id="session-name" class="session-name"></span>
+      </nav>
+    </header>
+
+    <main id="main" class="main" aria-live="polite">
+      <section id="view-loading" class="panel">
+        <p>Carregando o intake…</p>
+      </section>
+
+      <section id="view-login" class="panel panel-narrow" hidden>
+        <h2>Entre pelo console</h2>
+        <p class="muted">
+          O intake usa a mesma sessão da fila do time. Entre por lá e volte
+          para esta página.
+        </p>
+        <a class="button-primary" href="/team">Ir para o login</a>
+      </section>
+
+      <section id="view-unavailable" class="panel panel-state" hidden>
+        <h2>Intake indisponível</h2>
+        <p id="unavailable-detail">
+          A API do intake não respondeu. Pode estar desligada nesta instância.
+        </p>
+      </section>
+
+      <div id="view-intake" class="stack" hidden>
+        <p id="not-durable" class="notice" hidden>
+          Sem banco nesta instância: os pedidos ficam só na memória do servidor
+          e somem ao reiniciar.
+        </p>
+
+        <section class="panel">
+          <details id="submit-box">
+            <summary><h2 class="inline-heading">Submeter uma solução</h2></summary>
+            <form id="submit-form" class="intake-form" novalidate>
+              <div class="form-grid">
+                <label>Nome da solução<input name="name" maxlength="120" required /></label>
+                <label>Unidade de negócio<input name="business_unit" maxlength="80" required /></label>
+                <label>Responsável<input name="owner_name" maxlength="120" required /></label>
+                <label>Papel do responsável<input name="owner_role" maxlength="120" required /></label>
+                <label>Tipo<select name="solution_type" data-options="solution_types"></select></label>
+                <label>Hospedagem<select name="hosting_region" data-options="hosting_regions"></select></label>
+                <label>Fornecedor<input name="vendor" maxlength="120" /></label>
+                <label>Provedor do modelo<input name="model_provider" maxlength="80" /></label>
+                <label>Modelo<input name="model_name" maxlength="80" /></label>
+                <label>Base legal<select name="legal_basis" data-options="legal_bases"></select></label>
+              </div>
+              <label class="wide">Finalidade
+                <textarea name="purpose" maxlength="2000" rows="3" required></textarea>
+              </label>
+              <fieldset>
+                <legend>Dados tratados</legend>
+                <div id="data-categories" class="check-row"></div>
+              </fieldset>
+              <fieldset>
+                <legend>Titulares</legend>
+                <div id="data-subjects" class="check-row"></div>
+              </fieldset>
+              <fieldset>
+                <legend>Uso</legend>
+                <div class="check-row">
+                  <label class="check"><input type="checkbox" name="automated_decision" /> Decide sobre pessoas sem intervenção humana</label>
+                  <label class="check"><input type="checkbox" name="external_facing" /> Usada por público externo</label>
+                  <label class="check"><input type="checkbox" name="human_in_loop" checked /> Uma pessoa revisa o resultado</label>
+                </div>
+              </fieldset>
+              <p class="muted small">
+                Não informe e-mail, telefone ou documento: textos livres são
+                mascarados antes de gravar.
+              </p>
+              <div class="toolbar">
+                <button type="submit" class="button-primary">Submeter</button>
+                <p id="submit-message" class="form-message" hidden></p>
+              </div>
+            </form>
+          </details>
+        </section>
+
+        <section class="panel">
+          <div class="toolbar">
+            <h2 class="inline-heading">Pedidos e inventário</h2>
+            <a class="button-ghost" href="/web/support/intake/inventory.csv">Baixar inventário (CSV)</a>
+          </div>
+          <details class="policy-box">
+            <summary>Como a criticidade é calculada</summary>
+            <p id="policy-basis" class="muted small"></p>
+            <ul id="policy-rules" class="policy-rules"></ul>
+          </details>
+          <p id="queue-empty" class="muted" hidden>Nenhuma solução submetida ainda.</p>
+          <ol id="solution-list" class="case-list" aria-label="Soluções"></ol>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>Demonstração: a política de exemplo não substitui a análise do comitê de dados e IA nem do encarregado.</p>
+    </footer>
+
+    <script src="/team-assets/intake.js" defer></script>
+  </body>
+</html>
