@@ -121,6 +121,11 @@ feature_flags:
   o global. `basis` diz de onde vem o prazo (clausula de contrato, artigo de lei)
   e aparece em `sla.basis` na resposta do console. Use quando o prazo vem de
   fora do time: contrato de concessao, LGPD art. 19. Codigo: `app/support/sla.py`.
+  Na fila compartilhada do console (`sort=attention`) cada caso e ordenado pelo
+  seu proprio prazo: semaforo (vermelho, amarelo, verde; pausados por ultimo),
+  depois `deadline_at` mais proximo, depois prioridade, mais antigo e `case_id`.
+  Um caso de manutencao a 1h do prazo de 48h passa na frente de um pedido LGPD
+  com 12 dias de folga, mesmo que o pedido seja mais antigo.
 
 ## Como criar um novo dominio
 

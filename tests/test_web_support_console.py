@@ -337,16 +337,18 @@ def test_active_queue_orders_by_attention_and_serves_sla(
     body = response.json()
     assert body["view"] == "active"
     assert body["truncated"] is False
+    # Semaforo primeiro: estourado ativo, depois verde ativo; pausado no fim
+    # (aguarda o cliente, mesmo sendo urgente e mais antigo).
     assert [case["case_id"] for case in body["cases"]] == [
         "urgent-overdue",
-        "paused-old",
         "green-fresh",
+        "paused-old",
     ]
     overdue = body["cases"][0]["sla"]
     assert overdue["color"] == "red"
     assert overdue["paused"] is False
     assert "prazo estourado" in overdue["explanation"]
-    paused = body["cases"][1]["sla"]
+    paused = body["cases"][2]["sla"]
     assert paused["paused"] is True
     assert paused["color"] != "red"
     assert body["cases"][0]["assignee"] is None
