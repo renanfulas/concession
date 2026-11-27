@@ -63,11 +63,31 @@ class ChatFlowService:
             channel=channel,
             customer_id=customer_id,
         )
+        if "answer" in result:
+            result["answer"] = self._with_rule_notices(
+                domain, result.get("handoff_reasons") or [], str(result["answer"] or "")
+            )
         # Hot-tier state write (non-authoritative, fail-open). No-op without a store.
         self._record_session_state(
             domain=domain, session_id=session_id, channel=channel, result=result
         )
         return result
+
+    @staticmethod
+    def _with_rule_notices(
+        domain: DomainConfig, reasons: list[str], answer: str
+    ) -> str:
+        """Prepend the ``notice`` of every matched escalation rule, once each."""
+        matched = set(reasons)
+        notices: list[str] = []
+        handoff = getattr(domain, "handoff", None)
+        for rule in getattr(handoff, "escalation_rules", None) or ():
+            notice = (rule.notice or "").strip()
+            if rule.reason in matched and notice and notice not in notices:
+                notices.append(notice)
+        if not notices:
+            return answer
+        return "\n\n".join([*notices, answer] if answer else notices)
 
     def _record_session_state(
         self,

@@ -94,6 +94,8 @@ handoff:
   escalation_rules:
     - reason: risco_seguranca
       priority: urgent
+      # Texto fixo, mostrado antes de qualquer resposta (inclusive sem LLM).
+      notice: "Seguranca primeiro: mantenha distancia do equipamento e nao toque em fios, vidro ou estrutura solta. Se houver risco imediato (fogo, faisca, fumaca ou alguem ferido), ligue 193 (Corpo de Bombeiros)."
       terms:
         - fio exposto
         - fiacao exposta

@@ -95,6 +95,8 @@ handoff:
   escalation_rules:
     - reason: incidente_dados
       priority: urgent
+      # Texto fixo, mostrado antes de qualquer resposta (inclusive sem LLM).
+      notice: "Enquanto o encarregado analisa: troque as senhas das contas que voce acha que foram afetadas e nao informe senha nem codigo a quem pedir em nome deste canal. Este canal nunca pede senha, CPF ou codigo por mensagem."
       terms:
         - vazamento
         - vazaram

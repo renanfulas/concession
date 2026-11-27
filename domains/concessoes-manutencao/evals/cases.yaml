@@ -13,6 +13,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao de seguranca fixa (notice), presente mesmo sem LLM
+        - ligue 193
       expected_references:
         - risco-seguranca.md
       required_handoff_reasons:
@@ -29,6 +31,8 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+        # orientacao de seguranca fixa (notice), presente mesmo sem LLM
+        - ligue 193
       expected_references:
         - risco-seguranca.md
       required_handoff_reasons:
