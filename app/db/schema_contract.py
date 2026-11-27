@@ -3,7 +3,7 @@
 from typing import Any
 
 
-CONTRACT_MIGRATION = "019_otp_challenge_native_link.sql"
+CONTRACT_MIGRATION = "020_support_case_sla_policy_and_late_reason.sql"
 
 REQUIRED_COLUMNS = {
     "case_whatsapp_bindings": {
@@ -99,6 +99,9 @@ REQUIRED_COLUMNS = {
         "opened_at",
         "updated_at",
         "closed_at",
+        "sla_minutes",
+        "sla_basis",
+        "late_reason",
     },
     "staff_login_hints": {
         "hint_hash",
@@ -191,8 +194,10 @@ REQUIRED_CONSTRAINTS = {
     "support_cases_context_snapshot_object_check",
     "support_cases_closed_at_check",
     "support_cases_idempotency_key_unique",
+    "support_cases_late_reason_check",
     "support_cases_priority_check",
     "support_cases_reason_codes_array_check",
+    "support_cases_sla_minutes_check",
     "support_cases_status_check",
 }
 

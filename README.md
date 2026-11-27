@@ -81,6 +81,11 @@ novo no nucleo.
 - **Evals que cobrem a classificacao** (26 casos base, 13 por dominio, com
   casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
   `risco_seguranca`, e nao so que nada inesperado apareca.
+- **Relatorio mensal para a fiscalizacao**: CSV com um caso por linha, o
+  prazo gravado na abertura (editar o `domain.yaml` depois nao reescreve
+  casos abertos), o resultado contra o prazo e o motivo do atraso, que e
+  obrigatorio ao fechar depois do prazo e vem de uma lista fechada. Sem dado
+  pessoal. Botao "Baixar CSV" na `/team`.
 - **Tela da fila do time (`/team`)**: pagina estatica, somente leitura, com o
   login OTP staff existente, fila em ordem de atencao, semaforo com rotulo em
   texto, prazo no fuso America/Sao_Paulo, base do prazo, filtros por dominio e
@@ -291,6 +296,11 @@ translated.
 - **Evals that cover classification** (26 base cases, 13 per domain,
   including negative cases): `required_handoff_reasons` requires "exposed
   wire" to raise `risco_seguranca`, not just that nothing unexpected shows up.
+- **Monthly report for the auditor**: a CSV with one case per row, the
+  deadline frozen at opening (editing `domain.yaml` later never rewrites an
+  open case), the outcome against the deadline and the late reason, which is
+  required when closing after the deadline and comes from a closed list. No
+  personal data. "Baixar CSV" button on `/team`.
 - **Team queue screen (`/team`)**: a static, read-only page behind the
   existing staff OTP login. The queue is ordered by attention (traffic-light
   color, then nearest deadline), with the deadline in America/Sao_Paulo time,

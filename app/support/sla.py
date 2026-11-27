@@ -35,6 +35,25 @@ GREEN_BELOW = 0.6
 SLA_COLORS = ("green", "yellow", "red")
 COLOR_FILTERS = SLA_COLORS + ("paused",)
 
+# Codes accepted when a case is closed after its deadline (migration 020).
+# Closed list, no free text: the monthly report never carries personal data.
+LATE_REASONS = (
+    "aguardando_peca",
+    "acesso_ao_local",
+    "dependencia_externa",
+    "volume_acima_da_capacidade",
+    "classificacao_revista",
+    "outro",
+)
+LATE_REASON_LABEL_PT_BR = {
+    "aguardando_peca": "aguardando peça ou fornecedor",
+    "acesso_ao_local": "sem acesso ao local",
+    "dependencia_externa": "dependência externa (prefeitura, energia, terceiro)",
+    "volume_acima_da_capacidade": "volume acima da capacidade",
+    "classificacao_revista": "classificação revista depois da abertura",
+    "outro": "outro",
+}
+
 
 @dataclass(frozen=True)
 class SlaAssessment:
@@ -71,6 +90,33 @@ def domain_sla_overrides(domains: Iterable[Any]) -> dict[str, DomainSla]:
         if minutes or sla.basis:
             overrides[domain.name] = DomainSla(minutes_by_priority=minutes, basis=sla.basis)
     return overrides
+
+
+def resolve_case_sla_policy(
+    priority: str, settings: Any, domain_sla: DomainSla | None = None
+) -> tuple[int, str]:
+    """Minutes and basis frozen into a new case when it opens (migration 020)."""
+
+    basis = domain_sla.basis if domain_sla is not None else ""
+    return _sla_minutes(priority, settings, domain_sla), basis
+
+
+def frozen_case_sla(
+    priority: str,
+    sla_minutes: int | None,
+    sla_basis: str | None,
+    current: DomainSla | None,
+) -> DomainSla | None:
+    """SLA policy to assess one case with ``compute_sla``.
+
+    The policy stored at opening wins, so editing ``domain.yaml`` later never
+    rewrites the deadline of a case that is already open. Cases opened before
+    migration 020 have no stored policy and keep the current domain SLA.
+    """
+
+    if sla_minutes is None:
+        return current
+    return DomainSla(minutes_by_priority={priority: int(sla_minutes)}, basis=sla_basis or "")
 
 
 def compute_sla(

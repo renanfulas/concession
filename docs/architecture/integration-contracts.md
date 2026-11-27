@@ -1108,8 +1108,19 @@ valida **e** o cabecalho `X-Requested-With: XMLHttpRequest` — sem ele,
 
 ```json
 { "action": "claim" | "release" | "wait_customer" | "resume" | "close" | "cancel",
-  "note": "opcional, ate 1000 caracteres, sanitizado e truncado em 500 antes de persistir" }
+  "note": "opcional, ate 1000 caracteres, sanitizado e truncado em 500 antes de persistir",
+  "late_reason": "opcional; so em close depois do prazo (ver abaixo)" }
 ```
+
+Motivo do atraso (migration 020): `close` depois do prazo do caso exige
+`late_reason`, um codigo da lista fechada `aguardando_peca`, `acesso_ao_local`,
+`dependencia_externa`, `volume_acima_da_capacidade`, `classificacao_revista`,
+`outro` (sem texto livre, para nunca levar dado pessoal ao relatorio). O prazo
+usa a politica gravada na abertura e desconta as pausas. Sem o motivo ->
+`422 { "detail": { "code": "late_reason_required", "late_reasons": [...] } }`;
+motivo num caso dentro do prazo ou em outra acao ->
+`422 { "detail": { "code": "late_reason_not_applicable" } }`; codigo fora da
+lista -> `422` do schema. O banco tambem recusa (`support_cases_late_reason_check`).
 
 Matriz de transicoes (tudo fora disso -> `409` com
 `{ "detail": { "code": "invalid_transition", "status": "<status atual>" } }`):
@@ -1141,9 +1152,31 @@ pending_consent         -> cancel        -> cancelled     (closed_at = now())
 - decisao v1: `claim` exige caso sem dono (`assignee_staff_id IS NULL`); as
   demais acoes qualquer staff ativo pode executar (time pequeno, tudo
   auditado);
-- resposta de sucesso: `{ "case_id", "status", "assignee": { "display_name" } | null }`;
+- resposta de sucesso: `{ "case_id", "status", "assignee": { "display_name" } | null, "late_reason": "<codigo>" | null }`;
 - `404 support_case_not_found` quando o caso nao existe; banco indisponivel ->
   `503 support_inbox_storage_unavailable`.
+
+`GET /web/support/reports/monthly.csv?month=AAAA-MM[&domain=<nome>]` (sessao
+staff; so leitura): relatorio mensal para a fiscalizacao. Uma linha por caso
+aberto no mes, no fuso `SUPPORT_CONSOLE_TIMEZONE` (`pending_consent` fica de
+fora, como na fila). Colunas: `caso_id`, `dominio`, `canal`, `motivos`,
+`prioridade`, `status`, `aberto_em`, `fechado_em`, `prazo_minutos`,
+`base_do_prazo`, `prazo_em`, `pausado_minutos`, `resultado` (`no_prazo`,
+`fora_do_prazo`, `em_aberto_no_prazo`, `em_aberto_atrasado`, `cancelado`) e
+`motivo_atraso`. Sem dado pessoal: nada de telefone, nome, e-mail, resumo,
+transcript ou `request_id`. Formato para Excel pt-BR: separador `;`, BOM
+UTF-8, celulas que comecam com `= + - @` ganham `'` na frente (injecao de
+formula). `422 invalid_month` para mes malformado; cabecalhos
+`Content-Disposition: attachment`, `Cache-Control: no-store` e
+`X-Report-Truncated` (limite de seguranca de 20.000 linhas). A tela `/team`
+tem o formulario "Baixar CSV".
+
+Prazo gravado na abertura (migration 020): o INSERT do caso copia
+`sla_minutes` e `sla_basis` do `domain.yaml` (ou do SLA global) para
+`support_cases`. Fila, detalhe, metricas, fechamento e relatorio usam a
+politica gravada, entao editar o `domain.yaml` depois nao reescreve o prazo de
+casos ja abertos. Casos anteriores a 020 ficam com `NULL` e seguem o SLA
+vigente.
 
 Guardas e erros:
 

@@ -123,6 +123,19 @@
               Atualizar agora
             </button>
           </div>
+          <form
+            id="report-form"
+            class="filters report"
+            action="/web/support/reports/monthly.csv"
+            method="get"
+            aria-label="Relatório mensal"
+          >
+            <label>
+              <span>Relatório do mês (CSV, sem dados pessoais)</span>
+              <input id="report-month" type="month" name="month" required />
+            </label>
+            <button type="submit" class="button-ghost">Baixar CSV</button>
+          </form>
         </div>
 
         <p id="queue-notice" class="notice" role="status" hidden></p>

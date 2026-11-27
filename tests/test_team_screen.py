@@ -305,3 +305,17 @@ def test_console_domains_is_404_when_console_is_off(
 ) -> None:
     with _client(monkeypatch) as (client, _):
         assert client.get("/web/support/domains").status_code == 404
+
+
+def test_report_form_targets_the_monthly_csv_route(monkeypatch: pytest.MonkeyPatch) -> None:
+    html = _read("index.html")
+    form = re.search(r'<form\s+id="report-form"(.*?)</form>', html, flags=re.S)
+    assert form, "a tela deve ter o formulario do relatorio mensal"
+    action = re.search(r'action="([^"]+)"', form.group(1)).group(1)
+    assert 'method="get"' in form.group(1)
+    assert 'name="month"' in form.group(1)
+
+    with _client(monkeypatch, console=True) as (_, app):
+        operation = _console_routes(app)[action]["get"]
+    accepted = {param["name"] for param in operation["parameters"] if param["in"] == "query"}
+    assert "month" in accepted

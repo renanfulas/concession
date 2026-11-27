@@ -26,6 +26,7 @@ from app.db.runtime import DatabaseRuntime
 from app.conversations.repository import ConversationRepository
 from app.conversations.service import hash_session
 from app.notifications.support_team import render_support_team_notifications
+from app.support.case_policy import case_sla_policy
 from app.support.transcript import build_support_snapshot_context
 from app.support.wa_binding import build_support_deep_link
 
@@ -311,6 +312,7 @@ class OperationalRepository:
                                 summary=question[:500],
                                 status=case_status,
                                 priority=audit.case_priority,
+                                domain_name=audit.domain,
                             )
                         )
                         if consent_gate_active:
@@ -463,7 +465,16 @@ class OperationalRepository:
         summary: str,
         status: str = SUPPORT_CASE_STATUS_OPEN,
         priority: str = "normal",
+        domain_name: str | None = None,
     ) -> tuple[str, dict | None]:
+        safe_priority = priority if priority in {"low", "normal", "high", "urgent"} else "normal"
+        # Migration 020: freeze the deadline policy at opening, so a later edit
+        # of domain.yaml never rewrites the deadline of an open case.
+        sla_minutes, sla_basis = (
+            case_sla_policy(self.runtime.settings, domain_name, safe_priority)
+            if domain_name
+            else (None, None)
+        )
         snapshot: dict = {
             "request_id": request_id,
             "channel": channel,
@@ -492,9 +503,9 @@ class OperationalRepository:
             INSERT INTO support_cases (
               domain_id, customer_id, conversation_id, request_id, channel,
               reason_codes, context_snapshot_sanitized, idempotency_key, status,
-              priority
+              priority, sla_minutes, sla_basis
             )
-            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s)
             ON CONFLICT (idempotency_key)
             DO UPDATE SET
               updated_at = now(),
@@ -511,7 +522,9 @@ class OperationalRepository:
                 json.dumps(context_snapshot),
                 f"support_case:{turn_id}",
                 status,
-                priority if priority in {"low", "normal", "high", "urgent"} else "normal",
+                safe_priority,
+                sla_minutes,
+                sla_basis,
             ),
         )
         return str(cursor.fetchone()[0]), context_snapshot.get("organized_context")
