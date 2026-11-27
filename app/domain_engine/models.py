@@ -53,6 +53,11 @@ class DomainResponseConfig(DomainModel):
 class DomainHandoffRuleConfig(DomainModel):
     reason: str
     terms: list[str] = Field(default_factory=list)
+    # Phrases removed from the message before this rule's terms are checked, so
+    # a negated or unrelated use of a term does not fire the rule ("sem risco"
+    # must not make "risco" match). Removing the phrase never hides another term
+    # of the same message: "fio exposto, sem risco?" still matches "fio exposto".
+    ignore_terms: list[str] = Field(default_factory=list)
     # Priority of the support case this rule opens (drives the console SLA).
     # None keeps the default ``normal``; when several rules match, the highest wins.
     priority: CasePriority | None = None

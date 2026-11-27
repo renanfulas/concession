@@ -73,6 +73,8 @@ handoff:
       terms:
         - bloqueio
         - banimento
+      ignore_terms:         # opcional: frases tiradas do texto antes de casar
+        - sem bloqueio
 
 sla:                        # opcional: prazos do console para este dominio
   basis: "Anexo de SLA do contrato, item 3"
@@ -114,8 +116,15 @@ feature_flags:
   `domain.is_flag_enabled("<flag>")`, que devolve `False` para flag nao declarada.
 - `escalation_rules[].priority` (opcional) define a prioridade do caso que a
   regra abre no console. Quando varias regras casam, vale a maior; sem
-  prioridade declarada o caso fica `normal`. Codigo:
+  prioridade declarada o caso fica `normal`. Motivo de seguranca do nucleo
+  (`sensitive_topic`, `secret_request`, `card_data`, `prompt_injection_attempt`)
+  sobe o piso para `normal`: uma regra `low` nao rebaixa o caso. Codigo:
   `app.handoff.taxonomy.resolve_case_priority`.
+- `escalation_rules[].ignore_terms` (opcional) sao frases removidas da mensagem
+  antes de testar os `terms` daquela regra, para um termo com outro sentido nao
+  disparar a regra ("sem risco" nao vira `risco_seguranca`). Remover a frase nao
+  esconde outro termo da mesma mensagem ("fio exposto, sem risco?" continua
+  urgente). Todo `ignore_terms` novo pede um caso negativo no eval do dominio.
 - `escalation_rules[].notice` (opcional) e um texto fixo mostrado antes da
   resposta sempre que a regra casa, venha a resposta do LLM, do fallback ou de
   uma resposta bloqueada. Serve para orientacao que nao pode depender do modelo
@@ -126,6 +135,11 @@ feature_flags:
   o global. `basis` diz de onde vem o prazo (clausula de contrato, artigo de lei)
   e aparece em `sla.basis` na resposta do console. Use quando o prazo vem de
   fora do time: contrato de concessao, LGPD art. 19. Codigo: `app/support/sla.py`.
+  Na fila compartilhada do console (`sort=attention`) cada caso e ordenado pelo
+  seu proprio prazo: semaforo (vermelho, amarelo, verde; pausados por ultimo),
+  depois `deadline_at` mais proximo, depois prioridade, mais antigo e `case_id`.
+  Um caso de manutencao a 1h do prazo de 48h passa na frente de um pedido LGPD
+  com 12 dias de folga, mesmo que o pedido seja mais antigo.
 
 ## Como criar um novo dominio
 

@@ -11,6 +11,7 @@ from app.handoff.service import HandoffService
 from app.llm.service import LLMService
 from app.orchestration.confidence import compute_confidence
 from app.orchestration.prompt_builder import build_prompt
+from app.orchestration.references import public_references
 from app.retrieval.service import RetrievalService
 from app.conversations.service import ConversationHistoryService, hash_session
 from app.conversations.session_state import SessionState, SessionStateStore
@@ -214,7 +215,9 @@ class ChatFlowService:
                 "confidence": 0.0,
                 "escalated": True,
                 "handoff_reasons": pre_handoff_reasons,
-                "references": [chunk.source for chunk in chunks],
+                "references": public_references(
+                    (chunk.source for chunk in chunks), domain.name
+                ),
                 "error_code": None,
                 "provider_failure_kind": None,
                 "observability": self._build_observability(
@@ -270,7 +273,9 @@ class ChatFlowService:
                 "confidence": confidence,
                 "escalated": True,
                 "handoff_reasons": handoff_reasons,
-                "references": [chunk.source for chunk in chunks],
+                "references": public_references(
+                    (chunk.source for chunk in chunks), domain.name
+                ),
                 "error_code": error_code,
                 "provider_failure_kind": provider_failure_kind,
             }
@@ -320,7 +325,9 @@ class ChatFlowService:
             "confidence": confidence,
             "escalated": bool(handoff_reasons),
             "handoff_reasons": handoff_reasons,
-            "references": [chunk.source for chunk in chunks],
+            "references": public_references(
+                (chunk.source for chunk in chunks), domain.name
+            ),
             "error_code": error_code,
             "provider_failure_kind": provider_failure_kind,
             "observability": self._build_observability(

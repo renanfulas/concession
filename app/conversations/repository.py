@@ -5,6 +5,7 @@ import json
 from typing import Any
 
 from app.core.persistence_sanitize import (
+    READABLE_REDACTION_VERSIONS,
     REDACTION_VERSION,
     sanitize_for_persistence,
     sanitize_payload,
@@ -55,7 +56,7 @@ class ConversationRepository:
                       AND {identity_filter}
                       AND {status_filter}
                       AND m.role IN ('user', 'assistant')
-                      AND m.redaction_version = %s
+                      AND m.redaction_version = ANY(%s)
                     ORDER BY m.message_sequence DESC
                     LIMIT %s
                     """,
@@ -63,7 +64,7 @@ class ConversationRepository:
                         domain,
                         channel,
                         *params,
-                        REDACTION_VERSION,
+                        list(READABLE_REDACTION_VERSIONS),
                         limit,
                     ),
                 )

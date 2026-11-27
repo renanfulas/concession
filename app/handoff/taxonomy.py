@@ -47,6 +47,12 @@ def resolve_human_queue(domain: DomainConfig, reasons: list[str]) -> bool | None
 DEFAULT_CASE_PRIORITY = "normal"
 _PRIORITY_RANK = {"low": 0, "normal": 1, "high": 2, "urgent": 3}
 
+# Core security reasons never ride a domain's ``low`` rule: a graffiti report
+# that also asks for a password is at least ``normal``.
+SECURITY_PRIORITY_FLOOR_REASONS = frozenset(
+    {"sensitive_topic", "secret_request", "card_data", "prompt_injection_attempt"}
+)
+
 
 def resolve_case_priority(domain: DomainConfig, reasons: list[str]) -> str:
     """Priority for the support case opened by this turn.
@@ -55,6 +61,8 @@ def resolve_case_priority(domain: DomainConfig, reasons: list[str]) -> str:
     puts people at risk is ``urgent``). The highest priority among the matched
     reasons wins; with no declared priority the case stays ``normal``, which is the
     database default, so domains that never declare one keep today's behavior.
+    A core security reason (``SECURITY_PRIORITY_FLOOR_REASONS``) raises the floor
+    to ``normal`` so a ``low`` rule cannot downgrade it.
     """
     matched = set(reasons)
     declared = [
@@ -62,6 +70,8 @@ def resolve_case_priority(domain: DomainConfig, reasons: list[str]) -> str:
         for rule in domain.handoff.escalation_rules
         if rule.priority and rule.reason in matched
     ]
+    if matched & SECURITY_PRIORITY_FLOOR_REASONS:
+        declared.append(DEFAULT_CASE_PRIORITY)
     if not declared:
         return DEFAULT_CASE_PRIORITY
     return max(declared, key=_PRIORITY_RANK.__getitem__)
