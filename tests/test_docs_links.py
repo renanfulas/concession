@@ -30,6 +30,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCAN_EXTENSIONS = {".md", ".py", ".yaml", ".yml", ".sql"}
 SKIP_DIRS = {
     ".git",
+    # Ignorado pelo git; guarda worktrees de agentes (copias inteiras do repo).
+    ".claude",
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
