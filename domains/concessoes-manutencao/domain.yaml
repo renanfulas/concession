@@ -20,7 +20,7 @@ behavior:
   answer_guidelines:
     - em caso de risco imediato a pessoas (fio exposto, estrutura caindo, vidro quebrado), oriente primeiro a se afastar e a acionar 193 ou 190, depois registre o chamado
     - peca o codigo do ativo (etiqueta ou QR code no equipamento) e o endereco ou ponto de referencia; nao peca CPF, nome completo ou documento
-    - informe o prazo de atendimento da categoria do defeito citando o item do anexo de niveis de servico que esta na base
+    - informe o prazo de atendimento da categoria do defeito citando o numero do item do anexo de niveis de servico que esta na base, por exemplo item 3.3
     - deixe claro que os prazos desta base sao de demonstracao quando o usuario perguntar a fonte
     - nunca prometa prazo menor que o do anexo nem confirme multa, penalidade ou compensacao comercial
     - notificacoes da fiscalizacao, autos de infracao e duvidas sobre multa vao sempre para um humano
@@ -99,6 +99,8 @@ handoff:
       terms:
         - fio exposto
         - fiacao exposta
+        - fio solto
+        - fiacao solta
         - choque
         - faisca
         - fogo
@@ -126,6 +128,8 @@ handoff:
         - risco de notificacao
     - reason: notificacao_fiscalizacao
       priority: high
+      # Prazo fixo: no eval com LLM real o modelo omitia as 24 horas.
+      notice: "Notificacao da fiscalizacao vai para a equipe de contrato, que responde em ate 24 horas (item 3.5 do anexo de niveis de servico, demo). Este canal nao informa valor de multa."
       terms:
         - fiscalizacao
         - fiscal da prefeitura
@@ -168,6 +172,33 @@ handoff:
         - chamado atrasado
         - chamado esta atrasado
         - prazo atrasado
+    # Demais defeitos que nao impedem o uso (item 3.3). Sem esta regra, com o
+    # LLM respondendo com confianca, "banco solto" nao virava caso na fila.
+    - reason: defeito_geral
+      priority: normal
+      terms:
+        - solto
+        - danificad
+        - amassad
+        - torto
+        - estragad
+        - enferrujad
+        - com defeito
+    # Cobranca de um atendimento ja aberto: vai para uma pessoa da operacao.
+    - reason: cobranca_atendimento
+      priority: normal
+      terms:
+        - tecnico atrasado
+        - tecnico esta atrasado
+        - atendimento atrasado
+        - atendimento esta atrasado
+        - conserto atrasado
+        - conserto esta atrasado
+        - chamado atrasado
+        - chamado esta atrasado
+        - ninguem veio
+        - ainda nao consertaram
+        - ainda nao vieram
     - reason: conservacao_limpeza
       priority: low
       # Casamento por substring: "picha" cobre pichacao, pichado, picharam.
