@@ -30,7 +30,7 @@ from app.ai_intake.models import (
 )
 from app.ai_intake.service import AiIntakeService, InvalidSubmission, SolutionView
 from app.ai_intake.workflow import Actor, IntakeError, SolutionNotFound, TransitionRequest
-from app.api.routes.web_support import _require_csrf_header, require_staff_session
+from app.api.routes.web_support_auth import require_csrf_header, require_staff_session
 from app.api.schemas.ai_intake import (
     CriticalityReasonResponse,
     IntakeOptionsResponse,
@@ -108,7 +108,7 @@ def submit_solution(
     service: AiIntakeService = Depends(_service),
     principal: StaffPrincipal = Depends(require_staff_session),
 ) -> SolutionResponse:
-    _require_csrf_header(request)
+    require_csrf_header(request)
     submission = SolutionSubmission(
         **payload.model_dump(exclude={"data_categories", "data_subjects"}),
         data_categories=tuple(payload.data_categories),
@@ -142,7 +142,7 @@ def transition_solution(
     service: AiIntakeService = Depends(_service),
     principal: StaffPrincipal = Depends(require_staff_session),
 ) -> SolutionResponse:
-    _require_csrf_header(request)
+    require_csrf_header(request)
     transition = TransitionRequest(**payload.model_dump())
     view = _call(lambda: service.transition(solution_id, transition, _actor(principal)))
     log_event(
