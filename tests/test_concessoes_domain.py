@@ -91,23 +91,70 @@ def test_rule_priority_rejects_unknown_values() -> None:
 @pytest.mark.parametrize(
     ("question", "absent_reason"),
     [
+        # negacao simples (sem ignore_terms desde o casamento por palavra)
         ("O banco do abrigo ABR-1290 esta solto, mas sem risco", "risco_seguranca"),
         ("Não há risco, só o banco balançando", "risco_seguranca"),
+        ("Sem nenhum risco, só está sujo", "risco_seguranca"),
+        ("Não oferece risco, mas está sujo", "risco_seguranca"),
+        ("Risco nenhum, só o banco torto", "risco_seguranca"),
+        ("O painel PNL-0310 não está apagado, só tem adesivo", "tela_inoperante"),
+        # termo no meio de outra palavra
+        ("Arrisco dizer que é só sujeira no abrigo", "risco_seguranca"),
+        # ignore_terms que a negacao nao cobre, tambem com palavras no meio
         ("Qual o risco de multa se o painel ficar apagado?", "risco_seguranca"),
         ("O técnico está atrasado para consertar o relógio", "informacao_incorreta"),
+        ("O técnico já está atrasado para consertar o relógio", "informacao_incorreta"),
     ],
 )
-def test_ignore_terms_remove_false_positives(
+def test_negation_and_ignore_terms_remove_false_positives(
     domain: DomainConfig, question: str, absent_reason: str
 ) -> None:
     reasons = HandoffService().inspect_question(domain, question)
     assert absent_reason not in reasons
 
 
-def test_ignore_terms_never_hide_another_term_of_the_same_rule(domain: DomainConfig) -> None:
+def test_negation_never_hides_another_term_of_the_same_rule(domain: DomainConfig) -> None:
     reasons = HandoffService().inspect_question(domain, "Tem fio exposto no abrigo, sem risco?")
     assert "risco_seguranca" in reasons
     assert resolve_case_priority(domain, reasons) == "urgent"
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        # plural e palavras entre os termos
+        "Tem fios expostos no abrigo ABR-1104",
+        "O fio está exposto no abrigo",
+        "Nao toque: a estrutura do abrigo ABR-1501 esta solta",
+        # um "nao" perto que nao nega o risco
+        "Não toque no fio exposto do abrigo",
+        "Nao chegue perto, tem fio exposto",
+        "Não sei quem fez, mas tem fio exposto",
+        "Sem energia e com fio exposto",
+        "Nem sei se é risco, mas tem faísca",
+        "Tem fogo e não tem ninguém por perto",
+    ],
+)
+def test_risk_still_matches_with_gaps_plurals_and_nearby_no(
+    domain: DomainConfig, question: str
+) -> None:
+    reasons = HandoffService().inspect_question(domain, question)
+    assert "risco_seguranca" in reasons
+    assert resolve_case_priority(domain, reasons) == "urgent"
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "O relogio REL-0423 esta apagado",
+        "O painel do abrigo ABR-2210 está apagado",
+        "As telas estão apagadas desde ontem",
+    ],
+)
+def test_screen_off_matches_with_words_in_between(domain: DomainConfig, question: str) -> None:
+    reasons = HandoffService().inspect_question(domain, question)
+    assert "tela_inoperante" in reasons
+    assert resolve_case_priority(domain, reasons) == "high"
 
 
 def test_clock_running_late_is_still_wrong_information(domain: DomainConfig) -> None:
@@ -117,13 +164,13 @@ def test_clock_running_late_is_still_wrong_information(domain: DomainConfig) -> 
 
 def test_ignore_terms_are_scoped_to_their_rule(domain: DomainConfig) -> None:
     rules = [
-        DomainHandoffRuleConfig(reason="a", terms=["risco"], ignore_terms=["sem risco"]),
+        DomainHandoffRuleConfig(reason="a", terms=["risco"], ignore_terms=["risco de multa"]),
         DomainHandoffRuleConfig(reason="b", terms=["risco"]),
     ]
     scoped = domain.model_copy(
         update={"handoff": domain.handoff.model_copy(update={"escalation_rules": rules})}
     )
-    reasons = HandoffService().inspect_question(scoped, "esta sem risco")
+    reasons = HandoffService().inspect_question(scoped, "qual o risco de multa")
     assert "a" not in reasons
     assert "b" in reasons
 

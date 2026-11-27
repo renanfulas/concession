@@ -78,8 +78,8 @@ novo no nucleo.
   (Luhn), e-mail, telefone e IP saem mascarados antes de persistir e antes de a
   pergunta ir ao provedor de LLM e de embeddings; datas ISO e protocolos com
   rotulo ficam legiveis para a trilha de auditoria.
-- **Evals que cobrem a classificacao** (26 casos base, 13 por dominio, com
-  casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
+- **Evals que cobrem a classificacao** (35 casos base: 20 manutencao, 15
+  LGPD, com casos negativos): `required_handoff_reasons` exige que "fio exposto" levante
   `risco_seguranca`, e nao so que nada inesperado apareca.
 - **Relatorio mensal para a fiscalizacao**: CSV com um caso por linha, o
   prazo gravado na abertura (editar o `domain.yaml` depois nao reescreve
@@ -299,8 +299,8 @@ translated.
   card numbers (Luhn), e-mail, phone and IP are masked before persistence and
   before the question reaches the LLM and embeddings providers; ISO dates and
   labeled protocol numbers stay readable for the audit trail.
-- **Evals that cover classification** (26 base cases, 13 per domain,
-  including negative cases): `required_handoff_reasons` requires "exposed
+- **Evals that cover classification** (35 base cases: 20 maintenance, 15
+  LGPD, including negative cases): `required_handoff_reasons` requires "exposed
   wire" to raise `risco_seguranca`, not just that nothing unexpected shows up.
 - **Monthly report for the auditor**: a CSV with one case per row, the
   deadline frozen at opening (editing `domain.yaml` later never rewrites an

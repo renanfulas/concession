@@ -20,6 +20,10 @@ cases:
       should_escalate: true
       required_terms:
         - atendimento humano
+      # "desbloqueio" casa pelo termo `desbloque` (inicio de palavra), nao mais
+      # por substring de "bloqueio".
+      required_handoff_reasons:
+        - whatsapp_blocking_risk
       allowed_handoff_reasons:
         - whatsapp_blocking_risk
         - sensitive_topic

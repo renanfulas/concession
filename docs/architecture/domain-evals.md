@@ -300,8 +300,13 @@ Consequencias para quem escreve casos e termos:
 
 - Escreva padroes e termos como preferir, com ou sem acento; nao precisa
   duplicar a variante.
-- O casamento continua sendo por substring: acento nao faz "qual e a senha"
-  casar com o padrao "qual a senha". Palavras a mais ainda exigem outro termo.
+- Os padroes fixos do nucleo (injecao, segredo) e os termos de `routing`,
+  `explicit_human_phrases` e `sensitive_terms` continuam casando por substring:
+  acento nao faz "qual e a senha" casar com o padrao "qual a senha".
+- Os termos de `escalation_rules` casam no inicio de palavra, com ate 2
+  palavras de conteudo no meio e negacao simples (`app/handoff/term_match.py`).
+  Ao mudar uma regra, inclua um caso negativo (termo negado ou com outro
+  sentido) e um positivo (termo com palavras no meio) em `cases.yaml`.
 - A deteccao de numero de cartao (`contains_card_number`) continua recebendo o
   texto original, sem normalizacao.
 - Cada suite de confinamento dos dominios operacionais (`vendas` e
