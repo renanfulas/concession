@@ -72,7 +72,7 @@ novo no nucleo.
 
 | Item | Estado |
 | --- | --- |
-| Testes automatizados (`python -m pytest`) | 949 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
+| Testes automatizados (`python -m pytest`) | 968 passam, 44 pulados (integracao PostgreSQL, exigem banco) |
 | Evals `concessoes-manutencao` (base + confinamento) | 27/27 |
 | Evals `lgpd-titular` (base + confinamento) | 26/26 |
 | Evals do dominio de referencia `suporte-vps-whatsapp` | 20/20 |
