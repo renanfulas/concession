@@ -3,7 +3,8 @@ domain: lgpd-titular
 # certo e (2) levantar o motivo que define a prioridade do caso do encarregado:
 #   incidente_dados -> urgent (4h, meta interna demo)
 #   dados_de_terceiros, reclamacao_autoridade -> high (24h, meta interna demo)
-#   pedido_titular -> normal (15 dias, LGPD art. 19, II)
+#   pedido_titular -> normal (15 dias: acesso pelo art. 19, II; exclusao e
+#   correcao como meta interna demo, pois o prazo legal segue art. 18, §5º)
 cases:
   - id: quais-dados-voces-tem
     category: pedido_titular

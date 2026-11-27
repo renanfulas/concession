@@ -7,7 +7,8 @@ com o prazo da LGPD e coloca os dois na mesma fila auditada do time.
 > **Ambiente de demonstracao.** Contrato, prazos de manutencao, inventario de
 > ativos e aviso de privacidade sao ficticios e estao marcados como tal em cada
 > arquivo. Nao representam nenhuma empresa real. O nucleo vem do
-> `supportFAQagent`, um agente de suporte que ja operou em staging real.
+> `supportFAQagent`, um agente de suporte cujos planos e runbooks de staging
+> ficaram no repositorio de origem (ver `docs/archive/README.md`).
 
 **English:** [summary in English](#english-summary) ·
 [system card](docs/system-card.md).
@@ -21,8 +22,9 @@ Uma concessao de mobiliario urbano vive de prazos que nao sao do time:
   prazo e risco de penalidade e de desgaste na renovacao, e tela apagada e
   veiculacao que deixa de ser entregue.
 - **Prazo da lei.** Um cidadao que pergunta "voces estao me filmando?" ou pede
-  a exclusao dos seus dados tem resposta garantida em ate 15 dias (LGPD
-  art. 19, II).
+  acesso aos seus dados tem direito a declaracao completa em ate 15 dias (LGPD
+  art. 19, II). Para exclusao ou correcao, o prazo segue regulamento (art. 18,
+  §5º); nesta demo, o caso usa os mesmos 15 dias como meta interna.
 - **Prova.** Nos dois casos, quem fiscaliza quer ver quando o pedido chegou,
   qual prazo valia e quem tratou.
 
@@ -32,7 +34,7 @@ Uma concessao de mobiliario urbano vive de prazos que nao sao do time:
 Cidadao, tecnico ou fiscal (WhatsApp ou web)
   -> roteador de dominio (manutencao | privacidade)
   -> retrieval na base do dominio (anexo de SLA, aviso de privacidade)
-  -> resposta citando a fonte, ou fallback seguro
+  -> resposta com as fontes recuperadas, ou fallback seguro
   -> regra do dominio classifica o pedido (ex.: fio exposto = risco_seguranca)
   -> ticket com prioridade (urgent | high | normal | low)
   -> semaforo de SLA com o prazo e a base do prazo (clausula ou artigo)
@@ -43,7 +45,8 @@ Cidadao, tecnico ou fiscal (WhatsApp ou web)
 | `concessoes-manutencao` | "Fio exposto soltando faisca no abrigo ABR-1104" | `risco_seguranca` -> urgent | 4h | Anexo de SLA (demo), item 3.1 |
 | `concessoes-manutencao` | "O relogio REL-0423 esta com a tela apagada" | `tela_inoperante` -> high | 24h | Anexo de SLA (demo), item 3.2 |
 | `concessoes-manutencao` | "Picharam o relogio da Praca da Se" | `conservacao_limpeza` -> low | 5 dias | Anexo de SLA (demo), item 3.4 |
-| `lgpd-titular` | "Quero excluir meus dados" | `pedido_titular` -> normal | 15 dias | LGPD art. 19, II |
+| `lgpd-titular` | "Quero saber quais dados voces tem" | `pedido_titular` -> normal | 15 dias | LGPD art. 19, II |
+| `lgpd-titular` | "Quero excluir meus dados" | `pedido_titular` -> normal | 15 dias | meta interna (demo); prazo legal segue regulamento (art. 18, §5º) |
 | `lgpd-titular` | "Acho que meus dados vazaram" | `incidente_dados` -> urgent | 4h | meta interna (demo) |
 
 O mesmo motor de SLA atende um prazo de contrato (horas) e um prazo legal
@@ -58,9 +61,9 @@ novo no nucleo.
   a origem do prazo (`basis`) aparece em cada caso do console.
 - **Prioridade por tipo de pedido**: `escalation_rules[].priority` define a
   prioridade do ticket; quando varias regras casam, vale a maior.
-- **Evals que provam classificacao**: `required_handoff_reasons` exige que
-  "fio exposto" levante `risco_seguranca`, e nao so que nada inesperado
-  apareca.
+- **Evals que cobrem a classificacao** (20 casos base, 10 por dominio):
+  `required_handoff_reasons` exige que "fio exposto" levante
+  `risco_seguranca`, e nao so que nada inesperado apareca.
 - **Do nucleo herdado**: API FastAPI, roteamento de dominio por mensagem,
   retrieval lexical ou pgvector, provider OpenAI ou Anthropic com fallback
   seguro, handoff com taxonomia, ticket duravel com console de SLA e
@@ -81,8 +84,8 @@ novo no nucleo.
 | Chat com LLM real | exige `OPENAI_API_KEY`; sem chave, responde com o fallback seguro |
 
 Os evals rodam sem chave de LLM. Nesse modo, eles validam retrieval,
-referencias citadas, classificacao e escalonamento, mas nao a qualidade do
-texto gerado pelo modelo.
+fontes recuperadas (`references`), classificacao e escalonamento, mas nao a
+qualidade do texto gerado pelo modelo nem o que ele de fato cita.
 
 ## Rodando localmente
 
@@ -133,7 +136,8 @@ tests/                    testes unitarios e de integracao
 
 ## Limites
 
-Este projeto nao decide sozinho. Ele registra, classifica, cita a fonte e
+Este projeto nao decide sozinho. Ele registra, classifica, devolve as fontes
+recuperadas e
 entrega o caso para uma pessoa com o prazo certo. Nao executa exclusao de
 dados, nao discute multa, nao promete prazo menor que o do contrato e nao
 revela dado pessoal pelo chat.

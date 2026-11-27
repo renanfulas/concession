@@ -189,6 +189,33 @@ cases:
 
 ---
 
+## Domínios da concessão (`concessoes-manutencao`, `lgpd-titular`)
+
+Os exemplos acima vêm do domínio de referência herdado
+(`suporte-vps-whatsapp`). Os dois domínios desta cópia seguem o mesmo
+contrato: o confinamento vive no `domain.yaml` (`behavior`, `out_of_scope`,
+`handoff.sensitive_terms`) e em `prompts/`, e é coberto por três arquivos de
+eval por domínio:
+
+| Domínio | Arquivo | Casos |
+| --- | --- | --- |
+| `concessoes-manutencao` | `evals/confinement/out_of_scope.yaml` | 5 |
+| `concessoes-manutencao` | `evals/confinement/redefinition.yaml` | 6 |
+| `concessoes-manutencao` | `evals/confinement/secrets.yaml` | 6 |
+| `lgpd-titular` | `evals/confinement/out_of_scope.yaml` | 4 |
+| `lgpd-titular` | `evals/confinement/redefinition.yaml` | 6 |
+| `lgpd-titular` | `evals/confinement/secrets.yaml` | 6 |
+
+Total: 33 casos (17 manutenção, 16 LGPD), todos passando sem chave de LLM.
+Sem chave, o eval cobre retrieval, classificação e escalonamento, não o texto
+gerado. Para rodar um arquivo:
+
+```bash
+python -m app.evals.run_domain_eval lgpd-titular --file evals/confinement/secrets.yaml
+```
+
+---
+
 ## Referências desta decisão nas Issues
 
 | Issue | Como esta decisão se aplica |
