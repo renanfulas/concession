@@ -60,11 +60,13 @@ NEGATIONS = frozenset({"nao", "sem", "nem", "nenhum", "nenhuma", "nunca", "jamai
 # Words allowed between a negation and the term ("nao ha risco",
 # "sem nenhum risco", "nao oferece risco"). Kept short on purpose: anything else
 # ends the negation's reach, so "nao toque no fio exposto" stays a match.
+# No verbs of seeing ("vi", "vejo"): "nunca vi fio exposto assim" is emphasis,
+# the wire is there. Leaving them out makes "nao vejo risco" match too, which
+# errs on the safe side (urgent case, a person checks).
 NEGATION_FILLERS = frozenset(
     (
         "ha tem teve tinha houve existe existia esta estava ficou e era foi "
-        "oferece ofereceu apresenta vejo vi nenhum nenhuma qualquer mais um "
-        "uma"
+        "oferece ofereceu apresenta nenhum nenhuma qualquer mais um uma"
     ).split()
 )
 MAX_NEGATION_FILLERS = 2

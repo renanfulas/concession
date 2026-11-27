@@ -89,7 +89,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Controle | Onde | Evidencia |
 | --- | --- | --- |
 | Confinamento de escopo, prompt e segredo | `docs/security/llm-confinement.md` (secao dos dominios da concessao), `domains/*/evals/confinement/` | evals de confinamento cobrem 33 casos (17 manutencao, 16 LGPD), todos passando |
-| Classificacao testada | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | evals base cobrem 35 casos (20 manutencao, 15 LGPD), incluindo casos negativos (termo presente com outro sentido, negado ou no meio de outra palavra), todos passando |
+| Classificacao testada | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | evals base cobrem 36 casos (21 manutencao, 15 LGPD), incluindo casos negativos (termo presente com outro sentido, negado ou no meio de outra palavra), todos passando |
 | Prazo deterministico | `domain.yaml` bloco `sla`, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Orientacao de seguranca fixa | `escalation_rules[].notice` no `domain.yaml`, aplicada em `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals exigem "ligue 193", "nunca pede senha", "4 horas" (incidente) e "24 horas" (fiscalizacao) mesmo sem LLM |
 | Login de desenvolvimento restrito a maquina local | `ENABLE_TEAM_DEV_LOGIN` (padrao `false`), `app/support/dev_login.py`: nao sobe sem `APP_ENV=development` explicito; exige peer e `Host` de loopback; recusa headers de proxy | `tests/test_team_dev_login.py` |

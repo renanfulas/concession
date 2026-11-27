@@ -310,6 +310,22 @@ cases:
         - low_confidence
         - provider_error
 
+  - id: positivo-nunca-vi-e-enfase-nao-negacao
+    category: risco_seguranca
+    # "nunca vi" enfatiza o risco; nao pode apagar o caso urgente.
+    question: Nunca vi fio exposto assim no abrigo ABR-1104, ta perigoso.
+    expectation:
+      should_escalate: true
+      required_terms:
+        - atendimento humano
+        - ligue 193
+      required_handoff_reasons:
+        - risco_seguranca
+      allowed_handoff_reasons:
+        - risco_seguranca
+        - low_confidence
+        - provider_error
+
   - id: positivo-estrutura-solta-com-codigo-no-meio
     category: risco_seguranca
     question: "Nao toque: a estrutura do abrigo ABR-1501 esta solta."

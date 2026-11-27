@@ -99,10 +99,19 @@ def test_negation_inside_the_gap_blocks_the_term() -> None:
         "nao chegue perto, tem fio exposto",
         "nao sei quem fez, mas tem fio exposto",
         "sem luz e com fio exposto",
+        # "nunca vi" is emphasis, not denial: the wire is there.
+        "nunca vi fio exposto assim",
+        "jamais vi fio exposto desse jeito",
+        "nem vi fio exposto e quase pisei",
     ],
 )
 def test_negation_out_of_reach_does_not_block(text: str) -> None:
     assert matches_rule(text, ["fio exposto"])
+
+
+def test_verbs_of_seeing_do_not_carry_the_negation() -> None:
+    # Safe-side trade-off: "nao vejo risco" opens the case and a person checks.
+    assert matches_rule("nao vejo risco", ["risco"])
 
 
 def test_any_non_negated_occurrence_matches() -> None:

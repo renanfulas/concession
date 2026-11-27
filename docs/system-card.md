@@ -89,7 +89,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Control | Where | Evidence |
 | --- | --- | --- |
 | Scope, prompt and secret confinement | `docs/security/llm-confinement.md` (concession domains section), `domains/*/evals/confinement/` | confinement evals cover 33 cases (17 maintenance, 16 LGPD), all passing |
-| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals cover 35 cases (20 maintenance, 15 LGPD), including negative cases (term present with another meaning, negated, or inside another word), all passing |
+| Tested classification | `domains/*/evals/cases.yaml` (`required_handoff_reasons`) | base evals cover 36 cases (21 maintenance, 15 LGPD), including negative cases (term present with another meaning, negated, or inside another word), all passing |
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193", "nunca pede senha", "4 horas" (incident) and "24 horas" (auditor notice) even without an LLM |
 | Development login limited to the local machine | `ENABLE_TEAM_DEV_LOGIN` (default `false`), `app/support/dev_login.py`: refuses to boot without an explicit `APP_ENV=development`; needs a loopback peer and `Host`; refuses proxy headers | `tests/test_team_dev_login.py` |

@@ -133,6 +133,9 @@ def test_negation_never_hides_another_term_of_the_same_rule(domain: DomainConfig
         "Sem energia e com fio exposto",
         "Nem sei se é risco, mas tem faísca",
         "Tem fogo e não tem ninguém por perto",
+        # "nunca vi" enfatiza, nao nega: o fio esta la
+        "Nunca vi fio exposto assim no abrigo ABR-1104",
+        "Jamais vi vidro quebrado tão perigoso no ponto",
     ],
 )
 def test_risk_still_matches_with_gaps_plurals_and_nearby_no(
