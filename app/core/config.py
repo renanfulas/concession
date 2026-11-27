@@ -121,6 +121,15 @@ class Settings(BaseSettings):
     # APP_ENV=development explicito; as rotas tambem exigem peer e Host de
     # loopback e recusam headers de proxy (app/support/dev_login.py).
     enable_team_dev_login: bool = Field(default=False, alias="ENABLE_TEAM_DEV_LOGIN")
+    # Demo publica (ex.: um subdominio do portfolio): o mesmo atalho do login
+    # de desenvolvimento, sem as guardas de loopback, para qualquer visitante
+    # entrar na /team como o operador ficticio do seed. Por isso so sobe com
+    # PostgreSQL dedicado e com todo envio externo desligado: nada sai do
+    # servidor (WhatsApp, Hermes, webhooks, OTP). Ver
+    # docs/runbooks/public-demo.md.
+    enable_public_demo_login: bool = Field(
+        default=False, alias="ENABLE_PUBLIC_DEMO_LOGIN"
+    )
     web_chat_rate_limit_per_minute: int = Field(
         default=10,
         alias="WEB_CHAT_RATE_LIMIT_PER_MINUTE",
@@ -659,6 +668,9 @@ class Settings(BaseSettings):
         if self.database_pool_min_size > self.database_pool_max_size:
             raise ValueError("DATABASE_POOL_MIN_SIZE cannot exceed DATABASE_POOL_MAX_SIZE")
 
+        if self.enable_public_demo_login:
+            self._require_public_demo_isolation()
+
         if self.api_secret_key and self.api_secret_key.strip():
             self.api_secret_key = self.api_secret_key.strip()
             return self
@@ -668,6 +680,36 @@ class Settings(BaseSettings):
             return self
 
         raise ValueError("API_SECRET_KEY is required outside development environments")
+
+
+    def _require_public_demo_isolation(self) -> None:
+        """Fail closed at boot: the public demo never sends anything out."""
+
+        if self.persistence_backend != "postgres" or not self.enable_support_console:
+            raise ValueError(
+                "ENABLE_PUBLIC_DEMO_LOGIN requires PERSISTENCE_BACKEND=postgres "
+                "and ENABLE_SUPPORT_CONSOLE=true"
+            )
+        outbound = {
+            "ENABLE_WEB_WHATSAPP_AUTH": self.enable_web_whatsapp_auth,
+            "ENABLE_META_WHATSAPP_CHAT": self.enable_meta_whatsapp_chat,
+            "ENABLE_META_WHATSAPP_WEBHOOK": self.enable_meta_whatsapp_webhook,
+            "ENABLE_HERMES_CHAT": self.enable_hermes_chat,
+            "ENABLE_OUTBOX_INGRESS": self.enable_outbox_ingress,
+            "ENABLE_CONVERSATION_ARCHIVE": self.enable_conversation_archive,
+            "ENABLE_SUPPORT_TEAM_WHATSAPP_NOTIFY": self.enable_support_team_whatsapp_notify,
+            "ENABLE_WHATSAPP_SUPPORT_NUMBER": self.enable_whatsapp_support_number,
+            "VERIFIED_HANDOFF_WEBHOOK_URL": bool(self.verified_handoff_webhook_url),
+            "VERIFIED_WHATSAPP_WEBHOOK_URL": bool(self.verified_whatsapp_webhook_url),
+            "VERIFIED_OTP_WEBHOOK_URL": bool(self.verified_otp_webhook_url),
+            "WEB_AUTH_OTP_DELIVERY_TRANSPORT": self.web_auth_otp_delivery_transport != "memory",
+        }
+        enabled = sorted(name for name, on in outbound.items() if on)
+        if enabled:
+            raise ValueError(
+                "ENABLE_PUBLIC_DEMO_LOGIN requires every outbound channel off; "
+                "enabled: " + ", ".join(enabled)
+            )
 
 
 @lru_cache

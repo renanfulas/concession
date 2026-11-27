@@ -952,6 +952,12 @@ falha responde `404`, igual a rota inexistente. O uvicorn confia em
 `X-Forwarded-For` vindo de 127.0.0.1 por padrao, por isso a presenca do
 header, e nao so o peer, decide.
 
+Demo publica (`ENABLE_PUBLIC_DEMO_LOGIN`, padrao `false`): as mesmas rotas
+ficam disponiveis para qualquer peer e `Host`, inclusive atras de proxy. Em
+troca, a aplicacao so sobe com `PERSISTENCE_BACKEND=postgres`,
+`ENABLE_SUPPORT_CONSOLE=true` e todo canal de saida desligado
+(`docs/runbooks/public-demo.md`).
+
 ```text
 POST /web/support/auth/start
 POST /web/support/auth/confirm

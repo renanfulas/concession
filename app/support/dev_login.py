@@ -12,6 +12,11 @@ OTP, so para a demo local. Tres camadas, todas obrigatorias:
    local faria o peer parecer loopback; a presenca do header e o sinal.
 
 Qualquer falha responde 404, igual a uma rota que nao existe.
+
+Excecao: ``ENABLE_PUBLIC_DEMO_LOGIN=true`` libera o mesmo atalho para qualquer
+visitante de uma demo publica. A flag so sobe com banco dedicado e todo envio
+externo desligado (``Settings._require_public_demo_isolation``), entao a sessao
+so ve casos ficticios e nada do que o visitante fizer sai do servidor.
 """
 
 from __future__ import annotations
@@ -44,6 +49,8 @@ def dev_login_allowed(
     host_header: str | None,
     headers: Mapping[str, str],
 ) -> bool:
+    if getattr(settings, "enable_public_demo_login", False):
+        return True
     if not getattr(settings, "enable_team_dev_login", False):
         return False
     if str(getattr(settings, "app_env", "")).lower() != "development":

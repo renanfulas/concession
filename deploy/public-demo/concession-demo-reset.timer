@@ -1,0 +1,11 @@
+# Todo dia as 04:00 de Sao Paulo (07:00 UTC): apaga o que os visitantes
+# fizeram e volta aos casos ficticios do seed, com o relogio re-ancorado.
+[Unit]
+Description=Daily reset of the concession public demo
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -93,6 +93,7 @@ Suggested rating: **medium risk**, mandatory human review.
 | Deterministic deadline | `domain.yaml` `sla` block, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Fixed safety guidance | `escalation_rules[].notice` in `domain.yaml`, applied in `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals require "ligue 193", "nunca pede senha", "4 horas" (incident) and "24 horas" (auditor notice) even without an LLM |
 | Development login limited to the local machine | `ENABLE_TEAM_DEV_LOGIN` (default `false`), `app/support/dev_login.py`: refuses to boot without an explicit `APP_ENV=development`; needs a loopback peer and `Host`; refuses proxy headers | `tests/test_team_dev_login.py` |
+| Isolated public demo | `ENABLE_PUBLIC_DEMO_LOGIN` (default `false`): opens the fictitious operator login to any visitor, but the app refuses to boot without a dedicated PostgreSQL and the console, or with any outbound channel on (WhatsApp, Hermes, OTP, team alert, outbox ingress, conversation archive, verified webhooks); the database is rebuilt daily and the outbox dispatcher never runs (`docs/runbooks/public-demo.md`) | `tests/test_public_demo.py` |
 | Monthly report with no personal data | `app/support/monthly_report.py`, `GET /web/support/reports/monthly.csv` (staff session) | `tests/test_monthly_report.py` (no phone, name, e-mail, summary or `request_id` column; formula injection neutralized) |
 | AI solution intake with rule-based criticality | `governance/ai-intake.yaml` (demo), `app/ai_intake/`: deterministic criticality, deadline frozen at submission, separation of duties (the submitter never reviews), DPIA (RIPD) reference required to approve high criticality, decisions with a note and a closed-list reason, event trail; database `CHECK`s for the closed lists | `tests/test_ai_intake.py`, `tests/test_ai_intake_routes.py`, `tests/integration/test_ai_intake_postgres.py` |
 | Late reason from a closed list | `late_reason` required when closing after the deadline; database `CHECK`, no free text | `tests/test_monthly_report.py`, `tests/integration/test_monthly_report_postgres.py` |
@@ -106,6 +107,7 @@ Suggested rating: **medium risk**, mandatory human review.
 
 ## Known limits
 
+- In the public demo (`ENABLE_PUBLIC_DEMO_LOGIN`), every visitor sees on `/team` the messages other visitors sent in the chat, already masked. The chat asks people not to send real personal data and the database is rebuilt daily, but free text that slips past masking stays visible until the reset.
 - The `to` field of `operational_outbox.payload_sanitized` keeps the phone in clear, and the code has no outbox purge.
 - The staff remember cookie carries the E.164 phone in clear.
 - The `lgpd-titular` SLA `basis` cites art. 19, II for every `pedido_titular`, including deletion and correction, whose deadline follows regulation (art. 18, §5); there the 15 days are an internal target.

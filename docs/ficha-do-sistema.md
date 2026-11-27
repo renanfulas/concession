@@ -93,6 +93,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 | Prazo deterministico | `domain.yaml` bloco `sla`, `app/support/sla.py` | `tests/test_support_sla.py`, `tests/test_concessoes_domain.py` |
 | Orientacao de seguranca fixa | `escalation_rules[].notice` no `domain.yaml`, aplicada em `ChatFlowService.answer` | `tests/test_rule_notices.py`; evals exigem "ligue 193", "nunca pede senha", "4 horas" (incidente) e "24 horas" (fiscalizacao) mesmo sem LLM |
 | Login de desenvolvimento restrito a maquina local | `ENABLE_TEAM_DEV_LOGIN` (padrao `false`), `app/support/dev_login.py`: nao sobe sem `APP_ENV=development` explicito; exige peer e `Host` de loopback; recusa headers de proxy | `tests/test_team_dev_login.py` |
+| Demo publica isolada | `ENABLE_PUBLIC_DEMO_LOGIN` (padrao `false`): libera o login do operador ficticio para qualquer visitante, mas a aplicacao nao sobe sem PostgreSQL dedicado e console, nem com canal de saida ligado (WhatsApp, Hermes, OTP, aviso ao time, outbox ingress, arquivo de conversas, webhooks verificados); banco recriado todo dia e dispatcher do outbox nunca roda (`docs/runbooks/public-demo.md`) | `tests/test_public_demo.py` |
 | Relatorio mensal sem dado pessoal | `app/support/monthly_report.py`, `GET /web/support/reports/monthly.csv` (sessao staff) | `tests/test_monthly_report.py` (sem coluna de telefone, nome, e-mail, resumo ou `request_id`; injecao de formula neutralizada) |
 | Motivo de atraso em lista fechada | `late_reason` obrigatorio ao fechar depois do prazo; `CHECK` no banco, sem texto livre | `tests/test_monthly_report.py`, `tests/integration/test_monthly_report_postgres.py` |
 | Mascaramento antes de persistir | `app/core/persistence_sanitize.py` | `tests/test_pii_card.py`, `tests/test_pii_cpf.py`, `tests/test_privacy.py` |
@@ -106,6 +107,7 @@ Classificacao sugerida: **risco medio**, com revisao humana obrigatoria.
 
 ## Limites conhecidos
 
+- Na demo publica (`ENABLE_PUBLIC_DEMO_LOGIN`), todo visitante ve na `/team` as mensagens que outros visitantes mandaram no chat, ja mascaradas. O chat avisa para nao enviar dado pessoal real e o banco e recriado todo dia, mas o texto livre que escapar do mascaramento fica visivel ate o reset.
 - O campo `to` do `operational_outbox.payload_sanitized` guarda o telefone em claro, e nao ha purga do outbox no codigo.
 - O cookie de lembrete do operador carrega o telefone E.164 em claro.
 - O `basis` do SLA do dominio `lgpd-titular` cita o art. 19, II para todo `pedido_titular`, inclusive exclusao e correcao, cujo prazo segue regulamento (art. 18, §5º); os 15 dias sao meta interna nesses casos.
