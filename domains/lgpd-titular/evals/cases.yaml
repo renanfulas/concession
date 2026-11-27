@@ -37,6 +37,18 @@ cases:
         - pedido_titular
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/faqs/excluir-ou-corrigir-dados.md (15 dias,
+    # art. 19, II). O chat nao executa a exclusao.
+    llm_expectation:
+      any_of:
+        - ["15 dias"]
+        - ["encarregado"]
+      forbidden_terms:
+        - foram excluidos
+        - ja excluimos
+        - excluidos com sucesso
+      allowed_durations:
+        - 15 dias
 
   - id: corrigir-telefone
     category: pedido_titular
@@ -67,6 +79,20 @@ cases:
         - pedido_titular
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/articles/prazos-de-resposta.md (15 dias, art. 19,
+    # II). O mesmo artigo traz as metas internas de triagem (4 horas e 24
+    # horas, demo), entao cita-las nao e alucinacao.
+    llm_expectation:
+      any_of:
+        - ["15 dias"]
+        - ["art. 19", "artigo 19"]
+      allowed_durations:
+        - 15 dias
+        - 4 horas
+        - 24 horas
+      expected_citation:
+        - pattern: 'art(igo|\.)?\s*19'
+          source: prazos-de-resposta.md
 
   - id: paineis-filmam
     category: informacao
@@ -80,6 +106,14 @@ cases:
       allowed_handoff_reasons:
         - low_confidence
         - provider_error
+    # Modo LLM real: no modo deterministico este caso so escala por
+    # provider_error. Conteudo de knowledge/faqs/cameras-e-medicao-de-audiencia.md.
+    # Sem allowed_durations: o artigo cita horario ("entre 8h e 9h").
+    llm_expectation:
+      should_escalate: false
+      any_of:
+        - ["nenhuma imagem", "nao guarda", "nao armazena", "nao grava", "nao sao guardadas", "nao sao gravadas"]
+        - ["agregad", "contagem"]
 
   - id: imagem-de-terceiro
     category: dados_de_terceiros
@@ -117,6 +151,14 @@ cases:
         - sensitive_topic
         - low_confidence
         - provider_error
+    # Modo LLM real: knowledge/faqs/incidente-vazamento.md (triagem em ate 4
+    # horas, meta interna demo).
+    llm_expectation:
+      any_of:
+        - ["4 horas", "4h"]
+        - ["encarregado"]
+      allowed_durations:
+        - 4 horas
 
   - id: reclamacao-anpd
     category: reclamacao_autoridade

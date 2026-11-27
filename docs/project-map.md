@@ -38,6 +38,7 @@ manutencao (prazo de contrato) e titular LGPD (prazo legal).
 | Ficha do sistema (PT/EN) | ✅ | `docs/ficha-do-sistema.md`, `docs/system-card.md`, alinhadas ao codigo (dados guardados, pergunta crua ao provedor, bases legais como raciocinio demo) | confirmar bases legais com o encarregado real | revisao humana |
 | Resumo em ingles no README | ✅ | secao `English summary` no fim do `README.md`, com link no topo | atualizar junto quando o status em PT mudar | `tests/test_docs_links.py`, revisao humana |
 | Mascarar a pergunta antes do provedor de LLM/embeddings | ⬜ | so higiene de entrada (`app/core/sanitize.py`); mascaramento so na persistencia | aplicar o mascaramento antes de `retrieve` e `build_prompt` em `app/orchestration/chat_flow.py` | — |
+| Evals com LLM real (opt-in, nao e gate) | 🟡 | `--provider-mode real`, `--runs`, `--report`; falha com `provider_error`; bloco `llm_expectation` (`any_of`, `forbidden_terms`, `allowed_durations`, `expected_citation`) em 10 casos base; relatorio com modelo, temperatura, commit, pass@all e uso de tokens | rodar com chave real e preencher a tabela do README (nao executado ainda) | `tests/test_eval_real_mode.py` (providers falsos); gate deterministico inalterado |
 | Tela web do console (`/team`) | ⬜ | API do console pronta (`/web/support/*`) | tela para o time ver a fila e o semaforo | — |
 | Intake de solucoes de IA (inventario) | ⬜ | formato da ficha | formulario, modelo de dados e fila de revisao | — |
 | Relatorio mensal para a fiscalizacao | ⬜ | metricas do console | exportacao por categoria e prazo | — |

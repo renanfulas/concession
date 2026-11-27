@@ -117,6 +117,9 @@ cases:
   resumo recuperado, assunto antigo que nao pode contaminar a resposta nova).
 - `expected_references`: trechos esperados nas fontes recuperadas.
 - `allowed_handoff_reasons`: motivos de escalonamento aceitos, quando aplicavel.
+- `llm_expectation` (opcional): checagens usadas so pelo modo LLM real. O
+  modo deterministico ignora este bloco. Ver
+  [Modo LLM real](#modo-llm-real-opt-in-nao-e-gate).
 
 ## Como usar no MVP
 
@@ -130,6 +133,97 @@ No estado atual, os evals locais devem continuar deterministas e nao depender de
 Como o retrieval lexical ainda e simples, alguns casos podem esperar `low_confidence` mesmo quando ha documentos relacionados. Isso e uma linha de base do MVP, nao o comportamento final desejado.
 
 Quando provider real e pgvector estiverem calibrados em ambiente privado, estes casos devem evoluir para validar conteudo mais forte sem quebrar o gate deterministico local.
+
+## Modo LLM real (opt-in, nao e gate)
+
+O modo padrao (`--provider-mode deterministic`) continua sendo o gate de CI e
+a saida dele nao mudou. Sem chave, todo caso nao bloqueado termina em
+`provider_error` e a resposta e o `provider_error_message` do dominio; o termo
+`atendimento humano` exigido nos casos esta nesse texto. Por isso o modo
+deterministico nao mede o texto do modelo, e uma chave invalida passaria nele.
+
+O modo real mede o texto do modelo e nao pode ser enganado pelo fallback.
+Comando (rode voce mesmo, com `OPENAI_API_KEY` no ambiente ou no `.env`):
+
+```bash
+python -m app.evals.run_domain_eval concessoes-manutencao lgpd-titular \
+  --provider-mode real --runs 3 --report reports/eval-real.json
+```
+
+- Aceita varios dominios no mesmo relatorio; `--file` vale para todos.
+- Sem chave do provider do dominio (`OPENAI_API_KEY` ou `ANTHROPIC_API_KEY`),
+  aborta com codigo de saida 3 antes de chamar qualquer coisa. So a presenca
+  da chave e verificada; o valor nunca e impresso.
+- Saida: 0 se todo caso passou em todas as rodadas, 2 se algum falhou,
+  1 erro de dominio ou suite.
+- Cada chamada custa tokens: na suite base, 18 dos 20 casos chamam o modelo
+  (os pedidos explicitos de humano sao bloqueados antes), entao `--runs 3`
+  sobre os dois dominios sao 54 chamadas.
+
+### O que falha um caso no modo real
+
+1. `no_error`: qualquer falha do provider (`provider_error`, credencial,
+   timeout, resposta vazia) ou outro `error_code`. Uma chave invalida derruba
+   tudo, em vez de passar 100%.
+2. O `expectation` base do caso: escalonamento, referencias, motivos de
+   handoff e `forbidden_terms`. Os `required_terms` base so sao cobrados
+   quando a resposta nao veio do modelo (resposta bloqueada ou sem contexto),
+   porque foram calibrados contra o texto de fallback.
+3. O bloco opcional `llm_expectation`, quando existir:
+
+```yaml
+    llm_expectation:
+      any_of:                 # cada grupo passa se QUALQUER termo aparecer (fold)
+        - ["24 horas", "24h"]
+        - ["3.2"]
+      forbidden_terms:        # nenhum pode aparecer (fold)
+        - "r$"
+      allowed_durations:      # todo prazo citado precisa estar aqui
+        - 24 horas
+      expected_citation:      # regex na resposta E fonte entre as referencias
+        - pattern: 'item\s*3\.2'
+          source: tela-apagada.md
+      should_escalate: false  # opcional: sobrescreve o base so no modo real
+```
+
+- `allowed_durations` extrai todo `numero + unidade` da resposta (`h`, `hora`,
+  `horas`, `dia`, `dias`, `min`, `minutos`), normaliza (`24h` = `24 horas`) e
+  falha se algum nao estiver na lista (prazo alucinado, ex.: `2 horas` para
+  tela apagada). Taxas como `24 horas por dia` e `7 dias por semana` sao
+  ignoradas. Numero por extenso (`quatro horas`) nao e detectado. Nao use em
+  caso cujo artigo cita horario (`entre 8h e 9h`).
+- `expected_citation.pattern` e casado sem distinguir maiusculas contra a
+  resposta sem acento: escreva o padrao sem acento.
+- Com `llm_expectation`, o caso tambem exige que o modelo tenha respondido
+  (`llm_answered`).
+- `should_escalate` so existe para casos cujo escalonamento no modo
+  deterministico vinha apenas de `provider_error` (hoje
+  `como-registrar-sem-codigo` e `paineis-filmam`). O escalonamento e decidido
+  antes do modelo, entao esse valor foi medido com provider falso.
+- Prazos e itens dos blocos atuais saem dos artigos ficticios de demo
+  (`anexo-niveis-de-servico.md`, `prazos-de-resposta.md` e FAQs). Se o artigo
+  mudar, atualize o bloco.
+
+### O que o relatorio registra
+
+`--report` grava JSON (UTF-8). O mesmo JSON vai para o stdout.
+
+- `model` (id devolvido pelo provider; se ele nao devolver, o configurado no
+  `domain.yaml`, com `model_source: config`), `models_configured`
+- `temperature` (lida do wrapper do provider, `DEFAULT_TEMPERATURE = 0.0` em
+  `app/llm/wrapper.py`), `runs`, `retrieval_backend`, `timestamp_utc`
+- `git_commit` (`git rev-parse HEAD`, `null` se o git falhar) e `git_dirty`
+- por dominio e por metrica: `passed/total` por rodada, `mean_pass_rate` e
+  `pass_at_all` (caso passa em todas as rodadas); `failed_case_ids`
+- por caso e rodada: `answer` (sanitizada com `sanitize_for_persistence` e
+  truncada em 600 caracteres), `error_code`, `provider_failure_kind`,
+  `llm_called`, `failures` e `metrics`
+- `usage` (tokens somados) so quando o provider devolve uso; senao `null`.
+  `cost_usd` fica sempre `null`: o relatorio nao inventa preco. Calcule com a
+  tabela vigente do provider.
+
+As perguntas dos evals sao ficticias, mas a resposta fica gravada: revise o
+relatorio antes de versionar. Este modo nao entra no CI.
 
 ## Suites pgvector/provider real
 
