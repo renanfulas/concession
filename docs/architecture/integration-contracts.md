@@ -249,7 +249,9 @@ Saida atual:
   },
   "sources": [
     { "title": "Risco a pessoas: fio exposto, vidro quebrado, estrutura solta", "kind": "Pergunta frequente" }
-  ]
+  ],
+  "whatsapp_contact": false,
+  "team_queue_url": null
 }
 ```
 
@@ -265,6 +267,13 @@ Campos para a tela do cidadao (`app/support/public_case.py`):
   quando nenhum caso foi para a fila;
 - `sources`: ate 3 documentos consultados, pelo titulo `# ` do arquivo, sem
   repeticao; `references` segue com os caminhos estaveis para integracoes.
+- `whatsapp_contact`: `true` so com `ENABLE_WEB_WHATSAPP_AUTH=true`. Sem ele a
+  tela nao oferece o retorno por WhatsApp (as rotas `/web/auth/*` respondem
+  `404` e o visitante so veria um erro);
+- `team_queue_url`: na demo publica (`ENABLE_PUBLIC_DEMO_LOGIN` e
+  `ENABLE_TEAM_UI`), `"/team/"` quando este turno abriu um caso, para o
+  visitante ver o caso na fila; `null` fora da demo. A tela so aceita caminho
+  local (`/...`, nunca `//` nem esquema).
 
 Regras operacionais:
 

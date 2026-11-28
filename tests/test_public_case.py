@@ -18,8 +18,10 @@ from app.support.public_case import (
     MAX_PUBLIC_SOURCES,
     deadline_label,
     public_case_summary,
+    public_demo_team_url,
     public_sources,
     short_protocol,
+    whatsapp_contact_available,
 )
 
 SETTINGS = SimpleNamespace(
@@ -147,3 +149,44 @@ def test_chat_screen_keeps_the_demo_banner_and_no_external_assets() -> None:
     for text in (html, (STATIC / "styles.css").read_text(encoding="utf-8")):
         assert "https://" not in text and "http://" not in text
         assert "@import" not in text
+
+
+# --------------------------------------------------------------------------- #
+# Canais oferecidos na tela: WhatsApp so quando ligado; fila do time na demo
+# --------------------------------------------------------------------------- #
+
+
+def test_whatsapp_return_is_offered_only_when_the_channel_is_on() -> None:
+    assert whatsapp_contact_available(SimpleNamespace(enable_web_whatsapp_auth=True)) is True
+    assert whatsapp_contact_available(SimpleNamespace(enable_web_whatsapp_auth=False)) is False
+    assert whatsapp_contact_available(SimpleNamespace()) is False
+
+
+DEMO = SimpleNamespace(enable_public_demo_login=True, enable_team_ui=True)
+
+
+def test_public_demo_links_the_case_to_the_team_queue() -> None:
+    assert public_demo_team_url(DEMO, case_opened=True) == "/team/"
+
+
+@pytest.mark.parametrize(
+    ("settings", "case_opened"),
+    [
+        (DEMO, False),
+        (SimpleNamespace(enable_public_demo_login=False, enable_team_ui=True), True),
+        (SimpleNamespace(enable_public_demo_login=True, enable_team_ui=False), True),
+        (SimpleNamespace(), True),
+    ],
+)
+def test_no_team_link_outside_the_demo_or_without_a_case(settings, case_opened: bool) -> None:
+    assert public_demo_team_url(settings, case_opened=case_opened) is None
+
+
+def test_chat_screen_gates_the_whatsapp_offer_and_keeps_links_local() -> None:
+    script = Path("app/static/chat/app.js").read_text(encoding="utf-8")
+    assert "response.case && response.whatsapp_contact)" in script
+    assert "renderConsentPrompt(response.request_id, response.case)" in script
+    assert 'whatsapp_contact: payload?.whatsapp_contact === true' in script
+    assert "team_queue_url: safeLocalPath(payload?.team_queue_url)" in script
+    assert '!path.startsWith("//")' in script
+

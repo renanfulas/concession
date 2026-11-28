@@ -178,7 +178,15 @@ function normalizeChatPayload(response, payload) {
     sources: Array.isArray(payload?.sources)
       ? payload.sources.filter((item) => item && item.title)
       : [],
+    whatsapp_contact: payload?.whatsapp_contact === true,
+    team_queue_url: safeLocalPath(payload?.team_queue_url),
   };
+}
+
+// Only same-origin absolute paths ("/team/"); anything else is dropped.
+function safeLocalPath(value) {
+  const path = typeof value === "string" ? value.trim() : "";
+  return /^\/[a-z0-9/_-]*$/i.test(path) && !path.startsWith("//") ? path : null;
 }
 
 function normalizeHttpError(response, payload) {
@@ -257,6 +265,9 @@ function addAgentResponse(response) {
 
   if (response.case) {
     row.appendChild(renderCaseCard(response.case));
+    if (response.team_queue_url) {
+      row.appendChild(renderTeamQueueLink(response.team_queue_url));
+    }
   } else if (response.escalated) {
     row.appendChild(renderEscalationNotice(response));
   }
@@ -276,7 +287,8 @@ function addAgentResponse(response) {
     row.appendChild(renderFeedbackCard(response));
   }
 
-  if (response.escalated && response.request_id && response.case) {
+  // O retorno por WhatsApp so e oferecido quando o servidor tem o canal ligado.
+  if (response.escalated && response.request_id && response.case && response.whatsapp_contact) {
     row.appendChild(renderConsentPrompt(response.request_id, response.case));
   }
 
@@ -332,6 +344,17 @@ const PRIORITY_TAG = {
   normal: "tag-normal",
   low: "tag-low",
 };
+
+// Demo publica: leva o visitante para a fila do time, onde o caso acabou de entrar.
+function renderTeamQueueLink(path) {
+  const link = document.createElement("a");
+  link.className = "team-queue-link";
+  link.href = path;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = "Ver este caso na fila do time ↗";
+  return link;
+}
 
 function renderCaseCard(caseInfo) {
   const card = document.createElement("section");

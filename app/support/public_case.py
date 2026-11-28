@@ -112,3 +112,24 @@ def _describe(reference: str, domains_root: str) -> tuple[str, str]:
 def _title_from_name(stem: str) -> str:
     words = stem.replace("_", "-").split("-")
     return " ".join(words).strip().capitalize()
+
+
+TEAM_QUEUE_PATH = "/team/"
+
+
+def whatsapp_contact_available(settings) -> bool:
+    """The chat offers the WhatsApp return only when its routes exist."""
+
+    return bool(getattr(settings, "enable_web_whatsapp_auth", False))
+
+
+def public_demo_team_url(settings, *, case_opened: bool) -> str | None:
+    """In the public demo, point the visitor to the queue that shows their case."""
+
+    if not case_opened:
+        return None
+    if not getattr(settings, "enable_public_demo_login", False):
+        return None
+    if not getattr(settings, "enable_team_ui", False):
+        return None
+    return TEAM_QUEUE_PATH
