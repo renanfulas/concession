@@ -39,6 +39,12 @@ class WebChatResponse(BaseModel):
     # Titulos legiveis dos documentos consultados (``references`` segue com
     # os caminhos estaveis para quem integra).
     sources: list[dict[str, str]] = Field(default_factory=list)
+    # True so quando o retorno por WhatsApp (OTP + consentimento) esta ligado
+    # no servidor; sem isso a tela nao oferece o canal.
+    whatsapp_contact: bool = False
+    # Demo publica: caminho da fila do time, para o visitante ver o caso que
+    # acabou de abrir. None fora da demo ou quando nenhum caso foi aberto.
+    team_queue_url: str | None = None
 
 
 class WebFeedbackRequest(BaseModel):

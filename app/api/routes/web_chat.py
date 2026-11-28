@@ -2,7 +2,12 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
-from app.support.public_case import public_case_summary, public_sources
+from app.support.public_case import (
+    public_case_summary,
+    public_demo_team_url,
+    public_sources,
+    whatsapp_contact_available,
+)
 from app.api.schemas.feedback import FeedbackRequest, FeedbackResponse
 from app.api.schemas.web_chat import (
     WebChatRequest,
@@ -148,6 +153,13 @@ def create_web_chat(
     if should_set_cookie:
         set_public_session_cookie(response, settings, session_id)
 
+    case = public_case_summary(
+        domain=domain,
+        priority=resolve_case_priority(domain, list(chat_response["handoff_reasons"])),
+        handoff_status=str(chat_response["handoff_status"]),
+        request_id=str(chat_response["request_id"]),
+        settings=settings,
+    )
     return WebChatResponse(
         request_id=chat_response["request_id"],
         answer=chat_response["answer"],
@@ -158,15 +170,12 @@ def create_web_chat(
         error_code=chat_response["error_code"],
         support_deep_link=persistence_result.support_deep_link,
         notices=list(chat_response.get("notices") or []),
-        case=public_case_summary(
-            domain=domain,
-            priority=resolve_case_priority(domain, list(chat_response["handoff_reasons"])),
-            handoff_status=str(chat_response["handoff_status"]),
-            request_id=str(chat_response["request_id"]),
-            settings=settings,
-        ),
+        case=case,
         sources=public_sources(list(chat_response["references"]), settings.domains_path),
+        whatsapp_contact=whatsapp_contact_available(settings),
+        team_queue_url=public_demo_team_url(settings, case_opened=case is not None),
     )
+
 
 
 @router.post("/feedback", response_model=FeedbackResponse)

@@ -86,6 +86,8 @@ def test_web_chat_accepts_valid_payload_without_api_key_and_returns_public_contr
         "case": None,
         # The fake references a file outside domains/: title from the name.
         "sources": [{"title": "Qrcode whatsapp", "kind": "Documento"}],
+        "whatsapp_contact": False,
+        "team_queue_url": None,
     }
     assert "domain" not in payload
     assert "confidence" not in payload
@@ -417,6 +419,8 @@ def test_web_chat_greeting_returns_router_menu_then_clarification(
         "notices": [],
         "case": None,
         "sources": [],
+        "whatsapp_contact": False,
+        "team_queue_url": None,
     }
     assert second.json()["answer"] == CLARIFICATION_TEXT
 
